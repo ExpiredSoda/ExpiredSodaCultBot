@@ -12,7 +12,7 @@ A Discord bot that welcomes new members to the Expired Soda Cult server with a f
 
 ### Prerequisites
 
-- [.NET 10.0 SDK](https://dotnet.microsoft.com/download)
+- [.NET 8.0 SDK](https://dotnet.microsoft.com/download)
 - A Discord Bot Token (from [Discord Developer Portal](https://discord.com/developers/applications))
 
 ### Installation
