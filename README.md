@@ -68,52 +68,40 @@ And these Gateway Intents:
 
 ```
 ExpiredSodaCultBot/
+├── .github/
+│   └── workflows/          # GitHub Actions (Docker build)
 ├── CultBot/
 │   ├── Program.cs          # Main bot logic
 │   └── CultBot.csproj      # Project configuration
-└── ExpiredSodaCultBot.sln  # Solution file
+├── deployment/             # Optional Docker files
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   └── README.md
+├── .env.example            # Environment variable template
+├── .gitignore
+├── ExpiredSodaCultBot.sln  # Solution file
+└── README.md
 ```
 
 ## Dependencies
 
 - Discord.Net (WebSocket client for Discord)
 
-## Deployment Options
+## Deployment (24/7 Hosting)
 
-### Option 1: Docker (Recommended)
+### ⭐ Railway (Recommended - Easiest!)
 
-The easiest way to run the bot 24/7 is using Docker:
-
-1. Install [Docker](https://www.docker.com/get-started)
-2. Create a `.env` file from the example:
-   ```bash
-   cp .env.example .env
-   ```
-3. Edit `.env` and add your Discord bot token
-4. Run with Docker Compose:
-   ```bash
-   docker-compose up -d
-   ```
-
-To stop the bot:
-```bash
-docker-compose down
-```
-
-To view logs:
-```bash
-docker-compose logs -f
-```
-
-### Option 2: Railway (Free Cloud Hosting)
+Railway automatically detects .NET projects and deploys them - no Docker needed!
 
 1. Create an account at [Railway.app](https://railway.app)
 2. Click "New Project" → "Deploy from GitHub repo"
 3. Select this repository
-4. Add environment variable: `DISCORD_BOT_TOKEN` with your token
-5. Railway will automatically deploy and keep your bot running 24/7
+4. Add environment variable: `DISCORD_BOT_TOKEN` = your token
+5. Done! Railway automatically builds and runs your bot 24/7
 
-### Option 3: Render (Free Cloud Hosting)
+Railway will auto-redeploy whenever you push changes to GitHub.
+
+### Option 2: Render (Free Cloud Hosting)
 
 1. Create an account at [Render.com](https://render.com)
 2. Click "New +" → "Background Worker"
@@ -124,23 +112,9 @@ docker-compose logs -f
 5. Add environment variable: `DISCORD_BOT_TOKEN`
 6. Click "Create Background Worker"
 
-### Option 4: Azure Container Instances
+### Option 3: Docker (For Advanced Users)
 
-1. Build and push your Docker image:
-   ```bash
-   docker build -t expiredsodacultbot .
-   docker tag expiredsodacultbot:latest <your-registry>/expiredsodacultbot:latest
-   docker push <your-registry>/expiredsodacultbot:latest
-   ```
-2. Deploy to Azure Container Instances via Azure Portal or CLI
-3. Set the `DISCORD_BOT_TOKEN` environment variable
-
-### Option 5: VPS (DigitalOcean, Linode, etc.)
-
-1. SSH into your VPS
-2. Install Docker
-3. Clone this repository
-4. Follow Docker deployment steps above
+If you prefer Docker, see the `deployment/` folder for Docker files and instructions.
 
 ## Contributing
 

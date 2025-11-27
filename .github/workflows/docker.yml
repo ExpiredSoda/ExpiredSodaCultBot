@@ -26,5 +26,6 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: deployment/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/expiredsodacultbot:latest

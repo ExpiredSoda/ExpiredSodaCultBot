@@ -2,7 +2,9 @@ version: '3.8'
 
 services:
   cultbot:
-    build: .
+    build: 
+      context: ..
+      dockerfile: deployment/Dockerfile
     container_name: expired-soda-cult-bot
     environment:
       - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}

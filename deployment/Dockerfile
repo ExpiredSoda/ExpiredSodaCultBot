@@ -5,9 +5,9 @@ WORKDIR /app
 # Use the SDK image to build the application
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
-COPY ["CultBot/CultBot.csproj", "CultBot/"]
+COPY ["../CultBot/CultBot.csproj", "CultBot/"]
 RUN dotnet restore "CultBot/CultBot.csproj"
-COPY . .
+COPY ../ .
 WORKDIR "/src/CultBot"
 RUN dotnet build "CultBot.csproj" -c Release -o /app/build
 
