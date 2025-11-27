@@ -78,6 +78,70 @@ ExpiredSodaCultBot/
 
 - Discord.Net (WebSocket client for Discord)
 
+## Deployment Options
+
+### Option 1: Docker (Recommended)
+
+The easiest way to run the bot 24/7 is using Docker:
+
+1. Install [Docker](https://www.docker.com/get-started)
+2. Create a `.env` file from the example:
+   ```bash
+   cp .env.example .env
+   ```
+3. Edit `.env` and add your Discord bot token
+4. Run with Docker Compose:
+   ```bash
+   docker-compose up -d
+   ```
+
+To stop the bot:
+```bash
+docker-compose down
+```
+
+To view logs:
+```bash
+docker-compose logs -f
+```
+
+### Option 2: Railway (Free Cloud Hosting)
+
+1. Create an account at [Railway.app](https://railway.app)
+2. Click "New Project" → "Deploy from GitHub repo"
+3. Select this repository
+4. Add environment variable: `DISCORD_BOT_TOKEN` with your token
+5. Railway will automatically deploy and keep your bot running 24/7
+
+### Option 3: Render (Free Cloud Hosting)
+
+1. Create an account at [Render.com](https://render.com)
+2. Click "New +" → "Background Worker"
+3. Connect your GitHub repository
+4. Configure:
+   - **Build Command**: `dotnet build CultBot/CultBot.csproj -c Release`
+   - **Start Command**: `dotnet run --project CultBot/CultBot.csproj -c Release`
+5. Add environment variable: `DISCORD_BOT_TOKEN`
+6. Click "Create Background Worker"
+
+### Option 4: Azure Container Instances
+
+1. Build and push your Docker image:
+   ```bash
+   docker build -t expiredsodacultbot .
+   docker tag expiredsodacultbot:latest <your-registry>/expiredsodacultbot:latest
+   docker push <your-registry>/expiredsodacultbot:latest
+   ```
+2. Deploy to Azure Container Instances via Azure Portal or CLI
+3. Set the `DISCORD_BOT_TOKEN` environment variable
+
+### Option 5: VPS (DigitalOcean, Linode, etc.)
+
+1. SSH into your VPS
+2. Install Docker
+3. Clone this repository
+4. Follow Docker deployment steps above
+
 ## Contributing
 
 Feel free to open issues or submit pull requests!

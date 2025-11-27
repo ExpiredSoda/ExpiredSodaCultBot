@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  cultbot:
+    build: .
+    container_name: expired-soda-cult-bot
+    environment:
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
+    restart: unless-stopped
