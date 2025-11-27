@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ['dotnet-sdk_8']
+
+[phases.install]
+cmds = ['dotnet restore']
+
+[phases.build]
+cmds = ['dotnet build CultBot/CultBot.csproj -c Release']
+
+[start]
+cmd = 'dotnet run --project CultBot/CultBot.csproj -c Release --no-build'
