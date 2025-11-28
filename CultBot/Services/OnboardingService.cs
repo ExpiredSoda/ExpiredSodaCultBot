@@ -37,7 +37,7 @@ public class OnboardingService
                 var welcomeMessage = $"A new presence enters: {user.Mention}.\n\n" +
                                    $"You have been marked as **The Uninitiated**.\n" +
                                    $"To walk among us, you must complete the **Rite of Choosing** in <#{BotConfig.RoleRitualChannelId}>.\n" +
-                                   $"You have **24 hours** before the veil closes.";
+                                   $"You have **{BotConfig.InitiationTimeoutHours} hours** before the veil closes.";
 
                 await gatewayChannel.SendMessageAsync(welcomeMessage);
             }
@@ -55,7 +55,7 @@ public class OnboardingService
                                   $"**Neon Disciple** — for those who challenge themselves in digital arenas.\n" +
                                   $"**Veiled Archivist** — for those who seek stories, lore, and horror.\n\n" +
                                   $"Select one below.\n" +
-                                  $"You have **24 hours**.";
+                                  $"You have **{BotConfig.InitiationTimeoutHours} hours**.";
 
                 var component = new ComponentBuilder()
                     .WithButton("Become a Silent Witness", BotConfig.ButtonSilentWitness, ButtonStyle.Secondary)
