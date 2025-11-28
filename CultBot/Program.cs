@@ -42,6 +42,7 @@ class Program
                 // Services
                 services.AddSingleton<InitiationService>();
                 services.AddSingleton<OnboardingService>();
+                services.AddSingleton<ConfigurationValidator>();
 
                 // Background service for expiration checking
                 services.AddHostedService<InitiationExpirationService>();
@@ -75,15 +76,18 @@ public class BotService : IHostedService
     private readonly DiscordSocketClient _client;
     private readonly OnboardingService _onboardingService;
     private readonly IDbContextFactory<CultBotDbContext> _contextFactory;
+    private readonly ConfigurationValidator _configValidator;
 
     public BotService(
         DiscordSocketClient client,
         OnboardingService onboardingService,
-        IDbContextFactory<CultBotDbContext> contextFactory)
+        IDbContextFactory<CultBotDbContext> contextFactory,
+        ConfigurationValidator configValidator)
     {
         _client = client;
         _onboardingService = onboardingService;
         _contextFactory = contextFactory;
+        _configValidator = configValidator;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -128,11 +132,13 @@ public class BotService : IHostedService
         return Task.CompletedTask;
     }
 
-    private Task OnReadyAsync()
+    private async Task OnReadyAsync()
     {
         Console.WriteLine($"Connected as {_client.CurrentUser.Username}#{_client.CurrentUser.Discriminator}");
         Console.WriteLine("Cult Bot is ready!");
-        return Task.CompletedTask;
+        
+        // Run configuration validation
+        await _configValidator.ValidateConfigurationAsync();
     }
 
     private async Task OnUserJoinedAsync(SocketGuildUser user)

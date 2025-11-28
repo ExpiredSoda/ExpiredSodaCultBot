@@ -17,17 +17,27 @@ public class OnboardingService
 
     public async Task HandleUserJoinedAsync(SocketGuildUser user)
     {
+        // Ignore bots
+        if (user.IsBot)
+        {
+            Console.WriteLine($"Ignoring bot user: {user.Username} (ID: {user.Id})");
+            return;
+        }
+
         try
         {
+            Console.WriteLine($"Processing new member: {user.Username} (ID: {user.Id}) in guild {user.Guild.Name}");
+
             // 1. Assign "The Uninitiated" role
             var uninitiatedRole = user.Guild.GetRole(BotConfig.TheUninitiatedRoleId);
             if (uninitiatedRole != null)
             {
                 await user.AddRoleAsync(uninitiatedRole);
+                Console.WriteLine($"✓ Assigned 'The Uninitiated' role to {user.Username}");
             }
             else
             {
-                Console.WriteLine($"Warning: The Uninitiated role not found (ID: {BotConfig.TheUninitiatedRoleId})");
+                Console.WriteLine($"ERROR: The Uninitiated role not found (ID: {BotConfig.TheUninitiatedRoleId})");
             }
 
             // 2. Send welcome message in #gateway
@@ -40,10 +50,11 @@ public class OnboardingService
                                    $"You have **{BotConfig.InitiationTimeoutHours} hours** before the veil closes.";
 
                 await gatewayChannel.SendMessageAsync(welcomeMessage);
+                Console.WriteLine($"✓ Sent welcome message to #gateway");
             }
             else
             {
-                Console.WriteLine($"Warning: Gateway channel not found (ID: {BotConfig.GatewayChannelId})");
+                Console.WriteLine($"ERROR: Gateway channel not found (ID: {BotConfig.GatewayChannelId})");
             }
 
             // 3. Send ritual message in #role-ritual with buttons
@@ -64,18 +75,20 @@ public class OnboardingService
                     .Build();
 
                 var sentMessage = await ritualChannel.SendMessageAsync(ritualMessage, components: component);
+                Console.WriteLine($"✓ Sent ritual message (ID: {sentMessage.Id}) in #role-ritual");
 
                 // 4. Store the initiation session in the database
-                await _initiationService.CreateSessionAsync(
+                var session = await _initiationService.CreateSessionAsync(
                     user.Id,
                     user.Guild.Id,
                     ritualChannel.Id,
                     sentMessage.Id
                 );
+                Console.WriteLine($"✓ Created initiation session (ID: {session.Id}) for {user.Username}. Expires in {BotConfig.InitiationTimeoutHours} hours.");
             }
             else
             {
-                Console.WriteLine($"Warning: Role ritual channel not found (ID: {BotConfig.RoleRitualChannelId})");
+                Console.WriteLine($"ERROR: Role ritual channel not found (ID: {BotConfig.RoleRitualChannelId})");
             }
         }
         catch (Exception ex)
@@ -141,6 +154,7 @@ public class OnboardingService
             if (uninitiatedRole != null && user.Roles.Contains(uninitiatedRole))
             {
                 await user.RemoveRoleAsync(uninitiatedRole);
+                Console.WriteLine($"✓ Removed 'The Uninitiated' role from {user.Username}");
             }
 
             // Add the chosen role
@@ -148,6 +162,11 @@ public class OnboardingService
             if (newRole != null)
             {
                 await user.AddRoleAsync(newRole);
+                Console.WriteLine($"✓ Assigned '{chosenRoleName}' role to {user.Username}");
+            }
+            else
+            {
+                Console.WriteLine($"ERROR: Role '{chosenRoleName}' not found (ID: {chosenRoleId})");
             }
 
             // Delete the ritual message
@@ -163,6 +182,7 @@ public class OnboardingService
 
             // Mark session as completed
             await _initiationService.MarkSessionCompletedAsync(session.Id, roleKey);
+            Console.WriteLine($"✓ Initiation completed for {user.Username} - chose {chosenRoleName}");
 
             // Acknowledge the interaction
             await interaction.DeferAsync();
