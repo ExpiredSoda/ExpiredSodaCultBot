@@ -9,18 +9,28 @@ public class InitiationExpirationService : BackgroundService
     private readonly DiscordSocketClient _client;
     private readonly InitiationService _initiationService;
     private readonly TimeSpan _checkInterval;
+    private bool _isReady = false;
 
     public InitiationExpirationService(DiscordSocketClient client, InitiationService initiationService)
     {
         _client = client;
         _initiationService = initiationService;
         _checkInterval = TimeSpan.FromMinutes(BotConfig.ExpirationCheckIntervalMinutes);
+        
+        // Subscribe to Ready event to know when bot is fully initialized
+        _client.Ready += OnClientReady;
+    }
+
+    private Task OnClientReady()
+    {
+        _isReady = true;
+        return Task.CompletedTask;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        // Wait for the bot to be ready before starting checks
-        while (_client.LoginState != Discord.LoginState.LoggedIn && !stoppingToken.IsCancellationRequested)
+        // Wait for the bot to be fully ready (guilds/channels cached) before starting checks
+        while (!_isReady && !stoppingToken.IsCancellationRequested)
         {
             await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
         }
