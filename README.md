@@ -1,12 +1,20 @@
 # ExpiredSodaCultBot 🥤
 
-A Discord bot that welcomes new members to the Expired Soda Cult server with a fun greeting message and wave reaction.
+A Discord bot with a cult-themed onboarding system for the Expired Soda Cult server.
 
 ## Features
 
-- Welcomes new members when they join the server
-- Posts a customized welcome message in a designated channel
-- Automatically adds a 👋 reaction for easy community engagement
+### 🔮 Cult Initiation System
+- **24-hour role selection deadline** for new members
+- **Three role paths**: Silent Witness, Neon Disciple, Veiled Archivist
+- **Automatic expulsion** for members who don't complete the rites
+- **Button-based interactions** for seamless role selection
+- **PostgreSQL database** tracking all initiation sessions
+
+### 👋 Welcome System
+- Customized welcome messages in #gateway
+- Ritual messages with interactive buttons in #role-ritual
+- Role-specific success messages with GIFs
 
 ## Setup
 
@@ -49,18 +57,33 @@ A Discord bot that welcomes new members to the Expired Soda Cult server with a f
 
 ## Configuration
 
-- **Welcome Channel ID**: Set in `Program.cs` - replace `WelcomeChannelId` with your server's welcome channel ID
-- **Bot Token**: Set via `DISCORD_BOT_TOKEN` environment variable
+⚠️ **Important**: Before deploying, you must configure the bot with your Discord server IDs.
+
+See **[SETUP_GUIDE.md](SETUP_GUIDE.md)** for complete setup instructions including:
+- Discord server setup (roles, channels, permissions)
+- Obtaining Discord IDs
+- Configuring `BotConfig.cs` with your IDs and GIF URLs
+- Database setup on Railway
+
+### Environment Variables
+
+Required:
+- `DISCORD_BOT_TOKEN` - Your Discord bot token
+- `DATABASE_URL` - PostgreSQL connection string (automatically set by Railway)
 
 ## Bot Permissions
 
 The bot requires the following Discord permissions:
+- **Manage Roles** (to assign/remove roles)
+- **Kick Members** (to remove members who fail initiation)
 - View Channels
 - Send Messages
-- Add Reactions
 - Read Message History
+- Use Application Commands
 
-And these Gateway Intents:
+Recommended permission integer: `2415958018`
+
+Gateway Intents:
 - Guilds
 - Guild Members
 
@@ -69,23 +92,31 @@ And these Gateway Intents:
 ```
 ExpiredSodaCultBot/
 ├── .github/
-│   └── workflows/          # GitHub Actions (Docker build)
+│   └── workflows/          # GitHub Actions
 ├── CultBot/
-│   ├── Program.cs          # Main bot logic
+│   ├── Configuration/      # Bot configuration & constants
+│   │   └── BotConfig.cs    # ⚠️ CONFIGURE THIS with your IDs
+│   ├── Data/               # Database entities & context
+│   │   ├── CultBotDbContext.cs
+│   │   └── InitiationSession.cs
+│   ├── Services/           # Business logic
+│   │   ├── InitiationService.cs
+│   │   ├── OnboardingService.cs
+│   │   └── InitiationExpirationService.cs
+│   ├── Program.cs          # Entry point & DI setup
 │   └── CultBot.csproj      # Project configuration
 ├── deployment/             # Optional Docker files
-│   ├── Dockerfile
-│   ├── docker-compose.yml
-│   └── README.md
-├── .env.example            # Environment variable template
-├── .gitignore
-├── ExpiredSodaCultBot.sln  # Solution file
+├── SETUP_GUIDE.md          # 📖 Complete setup instructions
+├── MIGRATIONS.md           # Database migration info
 └── README.md
 ```
 
 ## Dependencies
 
-- Discord.Net (WebSocket client for Discord)
+- **Discord.Net** - Discord API client
+- **Entity Framework Core** - Database ORM
+- **Npgsql** - PostgreSQL provider
+- **Microsoft.Extensions.Hosting** - Background services
 
 ## Deployment (24/7 Hosting)
 
