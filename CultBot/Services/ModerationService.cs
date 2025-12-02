@@ -87,15 +87,24 @@ public class ModerationService
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
-            // Update spam tracker
+            // Update spam tracker - create if doesn't exist
             var tracker = await context.SpamTrackers
                 .FirstOrDefaultAsync(t => t.UserId == user.Id && t.GuildId == user.Guild.Id);
 
-            if (tracker != null)
+            if (tracker == null)
             {
-                tracker.IsSlowModeActive = true;
-                tracker.SlowModeUntil = DateTime.UtcNow.AddMinutes(durationMinutes);
+                tracker = new SpamTracker
+                {
+                    UserId = user.Id,
+                    GuildId = user.Guild.Id,
+                    RecentMessageTimes = new List<DateTime>(),
+                    LastSpamCheck = DateTime.UtcNow
+                };
+                context.SpamTrackers.Add(tracker);
             }
+
+            tracker.IsSlowModeActive = true;
+            tracker.SlowModeUntil = DateTime.UtcNow.AddMinutes(durationMinutes);
 
             // Log the action
             var log = new ModerationLog

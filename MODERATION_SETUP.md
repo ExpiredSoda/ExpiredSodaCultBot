@@ -199,5 +199,72 @@ var stats = await _dataCollectionService.GetUserStatsAsync(userId, guildId);
 // Returns: username, totalMessages, warnings, topGames, etc.
 ```
 
+## Implementation Notes
+
+### Slow Mode Behavior
+⚠️ **Important**: This is a "logical" slow mode enforced by the bot, NOT Discord's built-in per-channel slow mode feature.
+
+**How it works:**
+- When a user triggers slow mode, the bot tracks this in the `SpamTrackers` table
+- While in slow mode, any message they send is immediately deleted
+- Bot sends an ephemeral warning that auto-deletes after 5 seconds
+- No yellow "slowmode" indicator appears in Discord UI
+- Duration is configurable (default: 10 minutes for spam, 30 minutes for profanity)
+
+**Why this approach:**
+- More granular control (per-user instead of entire channel)
+- Can be automated based on behavior
+- Works across all channels
+- Doesn't affect other users
+
+### Database Persistence
+⚠️ **Railway Setup Required**: The bot uses PostgreSQL for persistent data storage.
+
+**Local Development:**
+- If `DATABASE_URL` is not set, falls back to in-memory database
+- All data is lost when bot restarts
+- Great for testing, but not for production
+
+**Production (Railway):**
+1. Add PostgreSQL plugin in Railway dashboard
+2. Railway auto-creates `DATABASE_URL` environment variable
+3. All data persists between deployments
+4. Required for tracking user stats, mod logs, game sessions
+
+### Slash Command Registration
+The `/live` command is registered **globally** (all servers the bot is in).
+
+**Current behavior:** Command appears in all guilds
+**Alternative:** Register per-guild for more control:
+```csharp
+// In SlashCommandHandler.cs
+await guild.CreateApplicationCommandAsync(command.Build());
+```
+
+### Future Feature Ideas
+The data collection infrastructure makes these easy to add:
+
+**User Stats Command:**
+```csharp
+// Already implemented in DataCollectionService
+var stats = await _dataCollectionService.GetUserStatsAsync(userId, guildId);
+// Returns: totalMessages, warnings, topGames, joinCount, etc.
+```
+
+**Server Leaderboards:**
+- Most active users (message count)
+- Top gamers (play time)
+- Most warnings received
+
+**Audit Logs:**
+- Query `ModerationLogs` for action history
+- Filter by user, action type, date range
+- Export for external analysis
+
+**Game-Specific Channels:**
+- Auto-role users based on games played
+- Create #destiny-lfg when users play Destiny
+- Track clan members' play schedules
+
 ## Support
 For issues or feature requests, check the GitHub repository or contact the bot maintainer.
