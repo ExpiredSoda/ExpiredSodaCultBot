@@ -9,6 +9,7 @@ public class CultBotDbContext : DbContext
     }
 
     public DbSet<InitiationSession> InitiationSessions { get; set; } = null!;
+    public DbSet<LiveStreamStatus> LiveStreamStatuses { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -19,6 +20,12 @@ public class CultBotDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => new { e.UserId, e.GuildId });
             entity.HasIndex(e => e.Status);
+        });
+
+        modelBuilder.Entity<LiveStreamStatus>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Platform);
         });
     }
 }

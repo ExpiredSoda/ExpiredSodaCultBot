@@ -49,6 +49,18 @@ public class ConfigurationValidator
                 hasErrors = true;
             }
 
+            // Check Transmissions Channel
+            var transmissionsChannel = guild.GetTextChannel(BotConfig.TransmissionsChannelId);
+            if (transmissionsChannel != null)
+            {
+                Console.WriteLine($"✓ Transmissions Channel: #{transmissionsChannel.Name} (ID: {BotConfig.TransmissionsChannelId})");
+            }
+            else
+            {
+                Console.WriteLine($"✗ ERROR: Transmissions Channel not found! (ID: {BotConfig.TransmissionsChannelId})");
+                hasErrors = true;
+            }
+
             // Check The Uninitiated Role
             var uninitiatedRole = guild.GetRole(BotConfig.TheUninitiatedRoleId);
             if (uninitiatedRole != null)

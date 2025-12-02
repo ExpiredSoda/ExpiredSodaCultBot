@@ -16,6 +16,13 @@ A Discord bot with a cult-themed onboarding system for the Expired Soda Cult ser
 - Ritual messages with interactive buttons in #role-ritual
 - Role-specific success messages with GIFs
 
+### 🔴 YouTube Live Stream Announcements
+- **Automatic checking** every 10 minutes for live streams
+- **Smart detection** - only announces once per stream
+- **Manual `/live` command** for instant announcements
+- **@everyone notifications** in #transmissions channel
+- **Beautiful embeds** with stream links
+
 ## Setup
 
 ### Prerequisites
@@ -59,9 +66,13 @@ A Discord bot with a cult-themed onboarding system for the Expired Soda Cult ser
 
 ⚠️ **Important**: Before deploying, you must configure the bot with your Discord server IDs.
 
-See **[SETUP_GUIDE.md](SETUP_GUIDE.md)** for complete setup instructions including:
+See setup guides:
+- **[SETUP_GUIDE.md](SETUP_GUIDE.md)** - Cult initiation system setup
+- **[YOUTUBE_LIVE_SETUP.md](YOUTUBE_LIVE_SETUP.md)** - YouTube live stream announcements setup
+
+Includes:
 - Discord server setup (roles, channels, permissions)
-- Obtaining Discord IDs
+- Obtaining Discord IDs and YouTube API keys
 - Configuring `BotConfig.cs` with your IDs and GIF URLs
 - Database setup on Railway
 
@@ -70,6 +81,7 @@ See **[SETUP_GUIDE.md](SETUP_GUIDE.md)** for complete setup instructions includi
 Required:
 - `DISCORD_BOT_TOKEN` - Your Discord bot token
 - `DATABASE_URL` - PostgreSQL connection string (automatically set by Railway)
+- `YOUTUBE_API_KEY` - YouTube Data API v3 key (see [YOUTUBE_LIVE_SETUP.md](YOUTUBE_LIVE_SETUP.md))
 
 ## Bot Permissions
 
@@ -102,11 +114,16 @@ ExpiredSodaCultBot/
 │   ├── Services/           # Business logic
 │   │   ├── InitiationService.cs
 │   │   ├── OnboardingService.cs
-│   │   └── InitiationExpirationService.cs
+│   │   ├── InitiationExpirationService.cs
+│   │   ├── YouTubeLiveService.cs
+│   │   ├── LiveStreamAnnouncementService.cs
+│   │   ├── LiveStreamCheckerService.cs
+│   │   └── SlashCommandHandler.cs
 │   ├── Program.cs          # Entry point & DI setup
 │   └── CultBot.csproj      # Project configuration
 ├── deployment/             # Optional Docker files
-├── SETUP_GUIDE.md          # 📖 Complete setup instructions
+├── SETUP_GUIDE.md          # 📖 Cult initiation setup
+├── YOUTUBE_LIVE_SETUP.md   # 📖 YouTube live stream setup
 ├── MIGRATIONS.md           # Database migration info
 └── README.md
 ```
@@ -117,6 +134,7 @@ ExpiredSodaCultBot/
 - **Entity Framework Core** - Database ORM
 - **Npgsql** - PostgreSQL provider
 - **Microsoft.Extensions.Hosting** - Background services
+- **Google.Apis.YouTube.v3** - YouTube Data API client
 
 ## Deployment (24/7 Hosting)
 

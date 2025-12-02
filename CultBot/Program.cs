@@ -43,9 +43,15 @@ class Program
                 services.AddSingleton<InitiationService>();
                 services.AddSingleton<OnboardingService>();
                 services.AddSingleton<ConfigurationValidator>();
+                
+                // YouTube Live Stream Services
+                services.AddSingleton<YouTubeLiveService>();
+                services.AddSingleton<LiveStreamAnnouncementService>();
+                services.AddSingleton<SlashCommandHandler>();
 
-                // Background service for expiration checking
+                // Background services
                 services.AddHostedService<InitiationExpirationService>();
+                services.AddHostedService<LiveStreamCheckerService>();
 
                 // Bot service
                 services.AddHostedService<BotService>();
@@ -77,17 +83,20 @@ public class BotService : IHostedService
     private readonly OnboardingService _onboardingService;
     private readonly IDbContextFactory<CultBotDbContext> _contextFactory;
     private readonly ConfigurationValidator _configValidator;
+    private readonly SlashCommandHandler _slashCommandHandler;
 
     public BotService(
         DiscordSocketClient client,
         OnboardingService onboardingService,
         IDbContextFactory<CultBotDbContext> contextFactory,
-        ConfigurationValidator configValidator)
+        ConfigurationValidator configValidator,
+        SlashCommandHandler slashCommandHandler)
     {
         _client = client;
         _onboardingService = onboardingService;
         _contextFactory = contextFactory;
         _configValidator = configValidator;
+        _slashCommandHandler = slashCommandHandler;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
