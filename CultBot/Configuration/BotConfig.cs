@@ -33,4 +33,32 @@ public static class BotConfig
     public const string YouTubeChannelHandle = "@ExpiredSodaOfficial";
     public const string YouTubeChannelId = ""; // Will be auto-resolved from handle, or set manually
     public const int LiveCheckIntervalMinutes = 10;
+
+    // Moderation Configuration
+    public const ulong ModLogChannelId = 0; // #mod-log - REPLACE THIS (optional)
+    
+    // Spam Detection Settings
+    public const int SpamMessageThreshold = 5; // Messages in time window
+    public const int SpamTimeWindowSeconds = 10; // Time window for spam detection
+    public const int SpamScoreThreshold = 15; // Score to trigger action
+    public const int SlowModeDurationMinutes = 5; // How long to apply slow mode
+    public const int BotBanThreshold = 25; // Score to auto-ban suspected bots
+    
+    // Bot Detection Criteria
+    public const int BotAccountAgeThresholdDays = 7; // Account younger than this = suspicious
+    public const int BotMessageLengthThreshold = 200; // Extremely long messages
+    public const int BotLinkRatio = 3; // Messages with links vs total messages
+    
+    // Profanity Filter (add your list of terms to detect)
+    public static readonly string[] RacialSlurs = Array.Empty<string>();
+    // Populate this array with terms appropriate for your server
+    // Example: new[] { "term1", "term2", "term3" }
+    
+    // Game Tracking Keywords (games to track when mentioned in chat)
+    public static readonly string[] TrackedGames = new[]
+    {
+        "valorant", "league of legends", "minecraft", "fortnite", 
+        "apex legends", "overwatch", "csgo", "cs2", "dota", 
+        "gta", "cod", "warzone", "destiny", "rust"
+    };
 }

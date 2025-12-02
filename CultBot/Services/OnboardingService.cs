@@ -8,11 +8,13 @@ public class OnboardingService
 {
     private readonly DiscordSocketClient _client;
     private readonly InitiationService _initiationService;
+    private readonly DataCollectionService _dataCollectionService;
 
-    public OnboardingService(DiscordSocketClient client, InitiationService initiationService)
+    public OnboardingService(DiscordSocketClient client, InitiationService initiationService, DataCollectionService dataCollectionService)
     {
         _client = client;
         _initiationService = initiationService;
+        _dataCollectionService = dataCollectionService;
     }
 
     public async Task HandleUserJoinedAsync(SocketGuildUser user)
@@ -23,6 +25,9 @@ public class OnboardingService
             Console.WriteLine($"Ignoring bot user: {user.Username} (ID: {user.Id})");
             return;
         }
+
+        // Track user join
+        await _dataCollectionService.TrackUserJoinAsync(user);
 
         try
         {
