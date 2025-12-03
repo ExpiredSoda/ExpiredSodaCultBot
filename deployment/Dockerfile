@@ -1,21 +1,26 @@
-# Use the official .NET runtime as base image
+# Build & runtime for .NET 8 (GA)
+
+# ---- Base runtime image ----
 FROM mcr.microsoft.com/dotnet/runtime:8.0 AS base
 WORKDIR /app
 
-# Use the SDK image to build the application
+# ---- Build image ----
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-COPY ["../CultBot/CultBot.csproj", "CultBot/"]
-RUN dotnet restore "CultBot/CultBot.csproj"
-COPY ../ .
-WORKDIR "/src/CultBot"
-RUN dotnet build "CultBot.csproj" -c Release -o /app/build
 
-FROM build AS publish
+# Copy the project file and restore deps
+COPY CultBot/CultBot.csproj CultBot/
+RUN dotnet restore "CultBot/CultBot.csproj"
+
+# Copy the rest of the source
+COPY . .
+
+# Build
+WORKDIR "/src/CultBot"
 RUN dotnet publish "CultBot.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
-# Final stage - copy the published app
+# ---- Final image ----
 FROM base AS final
 WORKDIR /app
-COPY --from=publish /app/publish .
+COPY --from=build /app/publish .
 ENTRYPOINT ["dotnet", "CultBot.dll"]
