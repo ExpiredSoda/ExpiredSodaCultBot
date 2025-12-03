@@ -64,6 +64,7 @@ artifacts/
 project.lock.json
 project.fragment.lock.json
 artifacts/
+out/
 
 # Rider
 .idea/
