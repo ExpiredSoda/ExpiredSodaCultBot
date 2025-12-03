@@ -67,6 +67,10 @@ public class CultBotDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => new { e.UserId, e.GuildId }).IsUnique();
+            
+            // Store list as JSON in PostgreSQL
+            entity.Property(e => e.RecentMessageTimes)
+                .HasColumnType("jsonb");
         });
     }
 }

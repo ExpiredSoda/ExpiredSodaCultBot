@@ -125,10 +125,24 @@ public class BotService : IHostedService
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         // Ensure database is created
-        await using (var context = await _contextFactory.CreateDbContextAsync(cancellationToken))
+        try
         {
-            await context.Database.EnsureCreatedAsync(cancellationToken);
-            Console.WriteLine("Database initialized.");
+            await using (var context = await _contextFactory.CreateDbContextAsync(cancellationToken))
+            {
+                await context.Database.EnsureCreatedAsync(cancellationToken);
+                Console.WriteLine("✓ Database initialized successfully.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"FATAL ERROR initializing database: {ex.GetType().Name}");
+            Console.WriteLine($"Message: {ex.Message}");
+            Console.WriteLine($"Stack: {ex.StackTrace}");
+            if (ex.InnerException != null)
+            {
+                Console.WriteLine($"Inner: {ex.InnerException.Message}");
+            }
+            throw;
         }
 
         // Wire up event handlers
