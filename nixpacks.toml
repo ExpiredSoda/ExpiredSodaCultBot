@@ -2,7 +2,7 @@
 nixPkgs = ['dotnet-sdk_8']
 
 [phases.build]
-cmds = ['dotnet publish CultBot/CultBot.csproj -c Release -o /app/out']
+cmds = ['dotnet publish CultBot/CultBot.csproj -c Release -o /app/out --self-contained true -r linux-x64']
 
 [start]
-cmd = 'dotnet /app/out/CultBot.dll'
+cmd = '/app/out/CultBot'
