@@ -1,0 +1,2 @@
+# Let nixpacks auto-detect C# and use NIXPACKS_CSHARP_SDK_VERSION env var
+# Set in Railway: NIXPACKS_CSHARP_SDK_VERSION=8.0.0
