@@ -42,21 +42,23 @@ class Program
                         options.UseNpgsql(connectionString));
                 }
 
-                // Services
+                // Core Services (in dependency order)
                 services.AddSingleton<InitiationService>();
-                services.AddSingleton<OnboardingService>();
                 services.AddSingleton<ConfigurationValidator>();
+                
+                // Moderation & Data Collection Services (register before services that depend on them)
+                services.AddSingleton<ModerationService>();
+                services.AddSingleton<SpamDetectionService>();
+                services.AddSingleton<ProfanityFilterService>();
+                services.AddSingleton<DataCollectionService>();
+                
+                // Services that depend on DataCollectionService
+                services.AddSingleton<OnboardingService>();
                 
                 // YouTube Live Stream Services
                 services.AddSingleton<YouTubeLiveService>();
                 services.AddSingleton<LiveStreamAnnouncementService>();
                 services.AddSingleton<SlashCommandHandler>();
-
-                // Moderation & Data Collection Services
-                services.AddSingleton<ModerationService>();
-                services.AddSingleton<SpamDetectionService>();
-                services.AddSingleton<ProfanityFilterService>();
-                services.AddSingleton<DataCollectionService>();
 
                 // Background services
                 services.AddHostedService<InitiationExpirationService>();
