@@ -29,13 +29,13 @@ public static class BotConfig
     public const string ButtonVeiledArchivist = "ritual_button_veiled_archivist";
 
     // YouTube Live Stream Configuration
-    public const ulong TransmissionsChannelId = 0; // #transmissions - REPLACE THIS
-    public const string YouTubeChannelHandle = "@ExpiredSodaOfficial";
+    public const ulong TransmissionsChannelId = 1442967472645865686;
+    public const string YouTubeChannelHandle = "@expiredsodaofficial";
     public const string YouTubeChannelId = ""; // Will be auto-resolved from handle, or set manually
     public const int LiveCheckIntervalMinutes = 10;
 
     // Moderation Configuration
-    public const ulong ModLogChannelId = 0; // #mod-log - REPLACE THIS (optional)
+    public const ulong ModLogChannelId = 1445569622664544309; // #mod-log - REPLACE THIS (optional)
     
     // Spam Detection Settings
     public const int SpamMessageThreshold = 5; // Messages in time window
