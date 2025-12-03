@@ -1,14 +1,8 @@
-[variables]
-DOTNET_VERSION = '8.0'
-
 [phases.setup]
 nixPkgs = ['dotnet-sdk_8']
 
-[phases.install]
-cmds = ['dotnet restore']
-
 [phases.build]
-cmds = ['dotnet publish CultBot/CultBot.csproj -c Release -o out --no-self-contained']
+cmds = ['dotnet publish CultBot/CultBot.csproj -c Release -o /app/out']
 
 [start]
-cmd = 'dotnet out/CultBot.dll'
+cmd = 'dotnet /app/out/CultBot.dll'
