@@ -10,11 +10,19 @@ class Program
 {
     public static async Task Main(string[] args)
     {
-        var host = Host.CreateDefaultBuilder(args)
-            .ConfigureServices((context, services) =>
+        try
+        {
+            Console.WriteLine("=== Starting ExpiredSodaCultBot ===");
+            
+            var host = Host.CreateDefaultBuilder(args)
+                .ConfigureServices((context, services) =>
             {
-                // Discord client
-                var config = new DiscordSocketConfig
+                try
+                {
+                    Console.WriteLine("Configuring services...");
+                    
+                    // Discord client
+                    var config = new DiscordSocketConfig
                 {
                     GatewayIntents = GatewayIntents.Guilds |
                                    GatewayIntents.GuildMembers |
@@ -66,10 +74,42 @@ class Program
 
                 // Bot service
                 services.AddHostedService<BotService>();
+                
+                Console.WriteLine("✓ All services configured");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("ERROR during service configuration:");
+                    Console.WriteLine($"  Type: {ex.GetType().Name}");
+                    Console.WriteLine($"  Message: {ex.Message}");
+                    throw;
+                }
             })
             .Build();
 
-        await host.RunAsync();
+            Console.WriteLine("✓ Host built successfully");
+            Console.WriteLine("Starting host...");
+            
+            await host.RunAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("=== FATAL STARTUP ERROR ===");
+            Console.WriteLine($"Exception Type: {ex.GetType().FullName}");
+            Console.WriteLine($"Message: {ex.Message}");
+            Console.WriteLine($"Source: {ex.Source}");
+            Console.WriteLine($"StackTrace:\n{ex.StackTrace}");
+            
+            if (ex.InnerException != null)
+            {
+                Console.WriteLine("\n=== INNER EXCEPTION ===");
+                Console.WriteLine($"Type: {ex.InnerException.GetType().FullName}");
+                Console.WriteLine($"Message: {ex.InnerException.Message}");
+                Console.WriteLine($"StackTrace:\n{ex.InnerException.StackTrace}");
+            }
+            
+            throw;
+        }
     }
 
     private static string ParseRailwayConnectionString(string databaseUrl)
