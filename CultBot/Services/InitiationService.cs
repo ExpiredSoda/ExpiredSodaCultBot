@@ -23,7 +23,7 @@ public class InitiationService
             RitualChannelId = ritualChannelId,
             RitualMessageId = ritualMessageId,
             JoinTimeUtc = DateTime.UtcNow,
-            Status = "Pending"
+            Status = InitiationSessionStatus.Pending
         };
 
         context.InitiationSessions.Add(session);
@@ -37,7 +37,7 @@ public class InitiationService
         await using var context = await _contextFactory.CreateDbContextAsync();
 
         return await context.InitiationSessions
-            .Where(s => s.UserId == userId && s.GuildId == guildId && s.Status == "Pending")
+            .Where(s => s.UserId == userId && s.GuildId == guildId && s.Status == InitiationSessionStatus.Pending)
             .OrderByDescending(s => s.JoinTimeUtc)
             .FirstOrDefaultAsync();
     }
@@ -49,7 +49,7 @@ public class InitiationService
         var cutoffTime = DateTime.UtcNow.AddHours(-timeoutHours);
 
         return await context.InitiationSessions
-            .Where(s => s.Status == "Pending" && s.JoinTimeUtc < cutoffTime)
+            .Where(s => s.Status == InitiationSessionStatus.Pending && s.JoinTimeUtc < cutoffTime)
             .ToListAsync();
     }
 
@@ -60,7 +60,7 @@ public class InitiationService
         var session = await context.InitiationSessions.FindAsync(sessionId);
         if (session != null)
         {
-            session.Status = "Completed";
+            session.Status = InitiationSessionStatus.Completed;
             session.ChosenRole = chosenRole;
             session.CompletedTimeUtc = DateTime.UtcNow;
             await context.SaveChangesAsync();
@@ -74,7 +74,7 @@ public class InitiationService
         var session = await context.InitiationSessions.FindAsync(sessionId);
         if (session != null)
         {
-            session.Status = "Expired";
+            session.Status = InitiationSessionStatus.Expired;
             session.ExpiredTimeUtc = DateTime.UtcNow;
             await context.SaveChangesAsync();
         }

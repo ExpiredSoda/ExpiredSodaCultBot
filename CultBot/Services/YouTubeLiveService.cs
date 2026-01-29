@@ -6,20 +6,20 @@ namespace CultBot.Services;
 
 public class YouTubeLiveService
 {
-    private readonly YouTubeService _youtubeService;
+    private readonly Google.Apis.YouTube.v3.YouTubeService _youtubeService;
     private string? _channelId;
 
     public YouTubeLiveService()
     {
         var apiKey = Environment.GetEnvironmentVariable("YOUTUBE_API_KEY");
-        
+
         if (string.IsNullOrWhiteSpace(apiKey))
         {
             Console.WriteLine("WARNING: YOUTUBE_API_KEY environment variable not set!");
             Console.WriteLine("YouTube live checking will not work. Get a key from: https://console.cloud.google.com/");
         }
 
-        _youtubeService = new YouTubeService(new BaseClientService.Initializer()
+        _youtubeService = new Google.Apis.YouTube.v3.YouTubeService(new BaseClientService.Initializer()
         {
             ApiKey = apiKey,
             ApplicationName = "CultBot"
@@ -55,7 +55,7 @@ public class YouTubeLiveService
                 var liveVideo = searchResponse.Items[0];
                 var videoId = liveVideo.Id.VideoId;
                 var videoUrl = $"https://www.youtube.com/watch?v={videoId}";
-                
+
                 Console.WriteLine($"✓ YouTube: Found live stream - {liveVideo.Snippet.Title}");
                 return (true, videoId, videoUrl);
             }

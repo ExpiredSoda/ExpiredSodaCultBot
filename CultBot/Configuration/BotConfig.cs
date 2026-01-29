@@ -23,6 +23,9 @@ public static class BotConfig
     // How often to check for expired initiations (in minutes)
     public const int ExpirationCheckIntervalMinutes = 5;
 
+    /// <summary>Only recover (send ritual to) uninitiated users who joined within this many days. 0 = no limit.</summary>
+    public const int RecoveryMaxJoinAgeDays = 7;
+
     // Custom IDs for buttons
     public const string ButtonSilentWitness = "ritual_button_silent_witness";
     public const string ButtonNeonDisciple = "ritual_button_neon_disciple";
@@ -33,6 +36,15 @@ public static class BotConfig
     public const string YouTubeChannelHandle = "@expiredsodaofficial";
     public const string YouTubeChannelId = ""; // Will be auto-resolved from handle, or set manually
     public const int LiveCheckIntervalMinutes = 10;
+    /// <summary>When already live and announced, check less often (e.g. to detect stream end).</summary>
+    public const int AlreadyLiveCheckIntervalMinutes = 30;
+    /// <summary>Only run YouTube live check between these hours (EST). 20 = 8pm, 5 = 5am.</summary>
+    public const int LiveCheckWindowStartHour = 20;
+    public const int LiveCheckWindowEndHour = 5;
+    public const string LiveCheckTimezoneId = "America/New_York";
+
+    /// <summary>Platform key for LiveStreamStatus (e.g. "YouTube").</summary>
+    public const string LiveStreamPlatformYouTube = "YouTube";
 
     // Moderation Configuration
     public const ulong ModLogChannelId = 1445569622664544309; // #mod-log - REPLACE THIS (optional)

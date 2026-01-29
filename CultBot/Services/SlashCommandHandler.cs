@@ -5,6 +5,8 @@ namespace CultBot.Services;
 
 public class SlashCommandHandler
 {
+    private static bool _commandsRegistered;
+
     private readonly DiscordSocketClient _client;
     private readonly LiveStreamAnnouncementService _liveStreamService;
 
@@ -15,8 +17,16 @@ public class SlashCommandHandler
         _client = client;
         _liveStreamService = liveStreamService;
 
-        _client.Ready += RegisterCommandsAsync;
         _client.SlashCommandExecuted += HandleSlashCommandAsync;
+    }
+
+    /// <summary>Register slash commands once. Call from BotService.OnReadyAsync; does nothing on subsequent calls.</summary>
+    public async Task RegisterCommandsOnceAsync()
+    {
+        if (_commandsRegistered)
+            return;
+        await RegisterCommandsAsync();
+        _commandsRegistered = true;
     }
 
     private async Task RegisterCommandsAsync()

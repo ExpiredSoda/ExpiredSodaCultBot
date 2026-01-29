@@ -8,32 +8,22 @@ public class InitiationExpirationService : BackgroundService
 {
     private readonly DiscordSocketClient _client;
     private readonly InitiationService _initiationService;
+    private readonly OnboardingService _onboardingService;
+    private readonly IBotReadySignal _readySignal;
     private readonly TimeSpan _checkInterval;
-    private bool _isReady = false;
 
-    public InitiationExpirationService(DiscordSocketClient client, InitiationService initiationService)
+    public InitiationExpirationService(DiscordSocketClient client, InitiationService initiationService, OnboardingService onboardingService, IBotReadySignal readySignal)
     {
         _client = client;
         _initiationService = initiationService;
+        _onboardingService = onboardingService;
+        _readySignal = readySignal;
         _checkInterval = TimeSpan.FromMinutes(BotConfig.ExpirationCheckIntervalMinutes);
-        
-        // Subscribe to Ready event to know when bot is fully initialized
-        _client.Ready += OnClientReady;
-    }
-
-    private Task OnClientReady()
-    {
-        _isReady = true;
-        return Task.CompletedTask;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        // Wait for the bot to be fully ready (guilds/channels cached) before starting checks
-        while (!_isReady && !stoppingToken.IsCancellationRequested)
-        {
-            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
-        }
+        await _readySignal.WaitForReadyAsync(stoppingToken);
 
         Console.WriteLine("InitiationExpirationService started.");
 
@@ -41,6 +31,7 @@ public class InitiationExpirationService : BackgroundService
         {
             try
             {
+                await RecoverMissedInitiationsAsync();
                 await CheckExpiredInitiationsAsync();
             }
             catch (Exception ex)
@@ -49,6 +40,38 @@ public class InitiationExpirationService : BackgroundService
             }
 
             await Task.Delay(_checkInterval, stoppingToken);
+        }
+    }
+
+    private async Task RecoverMissedInitiationsAsync()
+    {
+        foreach (var guild in _client.Guilds)
+        {
+            var uninitiatedRole = guild.GetRole(BotConfig.TheUninitiatedRoleId);
+            if (uninitiatedRole == null) continue;
+
+            var membersWithRole = guild.Users.Where(u => !u.IsBot && u.Roles.Contains(uninitiatedRole)).ToList();
+            foreach (var user in membersWithRole)
+            {
+                var session = await _initiationService.GetPendingSessionAsync(user.Id, guild.Id);
+                if (session != null) continue;
+
+                if (BotConfig.RecoveryMaxJoinAgeDays > 0 && user.JoinedAt.HasValue)
+                {
+                    var daysSinceJoin = (DateTime.UtcNow - user.JoinedAt.Value.UtcDateTime).TotalDays;
+                    if (daysSinceJoin > BotConfig.RecoveryMaxJoinAgeDays)
+                        continue;
+                }
+
+                try
+                {
+                    await _onboardingService.SendRitualForUninitiatedUserAsync(user);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error sending recovery ritual to {user.Username}: {ex.Message}");
+                }
+            }
         }
     }
 

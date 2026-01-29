@@ -50,10 +50,7 @@ A Discord bot with a cult-themed onboarding system for the Expired Soda Cult ser
    export DISCORD_BOT_TOKEN="your_bot_token_here"
    ```
 
-3. Update the welcome channel ID in `CultBot/Program.cs`:
-   ```csharp
-   private const ulong WelcomeChannelId = YOUR_CHANNEL_ID;
-   ```
+3. Update channel and role IDs in `CultBot/Configuration/BotConfig.cs` (see [SETUP.md](SETUP.md)).
 
 4. Build and run the bot:
    ```bash
@@ -64,24 +61,16 @@ A Discord bot with a cult-themed onboarding system for the Expired Soda Cult ser
 
 ## Configuration
 
-⚠️ **Important**: Before deploying, you must configure the bot with your Discord server IDs.
+⚠️ **Important**: Before deploying, configure the bot with your Discord server IDs in `CultBot/Configuration/BotConfig.cs`.
 
-See setup guides:
-- **[SETUP_GUIDE.md](SETUP_GUIDE.md)** - Cult initiation system setup
-- **[YOUTUBE_LIVE_SETUP.md](YOUTUBE_LIVE_SETUP.md)** - YouTube live stream announcements setup
-
-Includes:
-- Discord server setup (roles, channels, permissions)
-- Obtaining Discord IDs and YouTube API keys
-- Configuring `BotConfig.cs` with your IDs and GIF URLs
-- Database setup on Railway
+**Full setup:** See **[SETUP.md](SETUP.md)** for deployment checklist, cult initiation, YouTube live, moderation, and database.
 
 ### Environment Variables
 
 Required:
 - `DISCORD_BOT_TOKEN` - Your Discord bot token
 - `DATABASE_URL` - PostgreSQL connection string (automatically set by Railway)
-- `YOUTUBE_API_KEY` - YouTube Data API v3 key (see [YOUTUBE_LIVE_SETUP.md](YOUTUBE_LIVE_SETUP.md))
+- `YOUTUBE_API_KEY` - YouTube Data API v3 key (see [SETUP.md](SETUP.md))
 
 ## Bot Permissions
 
@@ -112,6 +101,7 @@ ExpiredSodaCultBot/
 │   │   ├── CultBotDbContext.cs
 │   │   └── InitiationSession.cs
 │   ├── Services/           # Business logic
+│   │   ├── BotService.cs
 │   │   ├── InitiationService.cs
 │   │   ├── OnboardingService.cs
 │   │   ├── InitiationExpirationService.cs
@@ -121,10 +111,8 @@ ExpiredSodaCultBot/
 │   │   └── SlashCommandHandler.cs
 │   ├── Program.cs          # Entry point & DI setup
 │   └── CultBot.csproj      # Project configuration
-├── deployment/             # Optional Docker files
-├── SETUP_GUIDE.md          # 📖 Cult initiation setup
-├── YOUTUBE_LIVE_SETUP.md   # 📖 YouTube live stream setup
-├── MIGRATIONS.md           # Database migration info
+├── deployment/             # Optional Docker (Railway doesn't need it)
+├── SETUP.md                # Full setup guide
 └── README.md
 ```
 
@@ -161,9 +149,9 @@ Railway will auto-redeploy whenever you push changes to GitHub.
 5. Add environment variable: `DISCORD_BOT_TOKEN`
 6. Click "Create Background Worker"
 
-### Option 3: Docker (For Advanced Users)
+### Option 3: Docker (Optional)
 
-If you prefer Docker, see the `deployment/` folder for Docker files and instructions.
+Docker files are in `deployment/` if you prefer containerized deployment; Railway builds .NET natively and does not require Docker.
 
 ## Contributing
 

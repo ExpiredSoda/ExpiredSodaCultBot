@@ -35,13 +35,13 @@ public class LiveStreamAnnouncementService
 
             // Get or create status record
             var status = await context.LiveStreamStatuses
-                .FirstOrDefaultAsync(s => s.Platform == "YouTube");
+                .FirstOrDefaultAsync(s => s.Platform == BotConfig.LiveStreamPlatformYouTube);
 
             if (status == null)
             {
                 status = new LiveStreamStatus
                 {
-                    Platform = "YouTube",
+                    Platform = BotConfig.LiveStreamPlatformYouTube,
                     LastCheckedAt = DateTime.UtcNow
                 };
                 context.LiveStreamStatuses.Add(status);

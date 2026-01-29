@@ -1,4 +1,5 @@
 using CultBot.Configuration;
+using CultBot.Data;
 using Discord;
 using Discord.WebSocket;
 
@@ -100,6 +101,35 @@ public class OnboardingService
         {
             Console.WriteLine($"Error in HandleUserJoinedAsync: {ex.Message}");
         }
+    }
+
+    /// <summary>Send the ritual message and create a pending session for a user who has The Uninitiated role but no session (e.g. missed during bot downtime).</summary>
+    public async Task<bool> SendRitualForUninitiatedUserAsync(SocketGuildUser user)
+    {
+        var ritualChannel = user.Guild.GetTextChannel(BotConfig.RoleRitualChannelId);
+        if (ritualChannel == null)
+        {
+            Console.WriteLine($"ERROR: Role ritual channel not found for recovery (ID: {BotConfig.RoleRitualChannelId})");
+            return false;
+        }
+
+        var ritualMessage = $"{user.Mention}, choose your path to enter the Cult.\n\n" +
+            $"**Silent Witness** — for those who watch from the shadows.\n" +
+            $"**Neon Disciple** — for those who challenge themselves in digital arenas.\n" +
+            $"**Veiled Archivist** — for those who seek stories, lore, and horror.\n\n" +
+            $"Select one below.\n" +
+            $"You have **{BotConfig.InitiationTimeoutHours} hours**.";
+
+        var component = new ComponentBuilder()
+            .WithButton("Become a Silent Witness", BotConfig.ButtonSilentWitness, ButtonStyle.Secondary)
+            .WithButton("Become a Neon Disciple", BotConfig.ButtonNeonDisciple, ButtonStyle.Secondary)
+            .WithButton("Become a Veiled Archivist", BotConfig.ButtonVeiledArchivist, ButtonStyle.Secondary)
+            .Build();
+
+        var sentMessage = await ritualChannel.SendMessageAsync(ritualMessage, components: component);
+        var session = await _initiationService.CreateSessionAsync(user.Id, user.Guild.Id, ritualChannel.Id, sentMessage.Id);
+        Console.WriteLine($"✓ Recovery: sent ritual for {user.Username} (session ID: {session.Id}). Expires in {BotConfig.InitiationTimeoutHours} hours.");
+        return true;
     }
 
     public async Task HandleButtonInteractionAsync(SocketMessageComponent interaction)
