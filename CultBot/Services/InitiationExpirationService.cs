@@ -23,7 +23,14 @@ public class InitiationExpirationService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await _readySignal.WaitForReadyAsync(stoppingToken);
+        try
+        {
+            await _readySignal.WaitForReadyAsync(stoppingToken);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
 
         Console.WriteLine("InitiationExpirationService started.");
 

@@ -23,8 +23,8 @@ public static class BotConfig
     // How often to check for expired initiations (in minutes)
     public const int ExpirationCheckIntervalMinutes = 5;
 
-    /// <summary>Only recover (send ritual to) uninitiated users who joined within this many days. 0 = no limit.</summary>
-    public const int RecoveryMaxJoinAgeDays = 7;
+    /// <summary>Only recover (send ritual to) uninitiated users who joined within this many days. 0 = no limit (recover everyone).</summary>
+    public const int RecoveryMaxJoinAgeDays = 0;
 
     // Custom IDs for buttons
     public const string ButtonSilentWitness = "ritual_button_silent_witness";

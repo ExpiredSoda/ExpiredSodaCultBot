@@ -30,6 +30,13 @@ public static class ServiceCollectionExtensions
             services.AddDbContextFactory<CultBotDbContext>(options =>
                 options.UseInMemoryDatabase("CultBotDb"));
         }
+        else if (connectionString.TrimStart().StartsWith("${{", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                "DATABASE_URL appears to be an unresolved Railway variable reference. " +
+                "In Railway: open your bot service → Variables → ensure DATABASE_URL is a *reference* to your PostgreSQL service (Add Variable → Add Reference → select your Postgres service → choose DATABASE_URL). " +
+                "The reference name must match your PostgreSQL service name exactly (e.g. if the service is named 'PostgreSQL', use ${{PostgreSQL.DATABASE_URL}}).");
+        }
         else
         {
             connectionString = ParseRailwayConnectionString(connectionString);

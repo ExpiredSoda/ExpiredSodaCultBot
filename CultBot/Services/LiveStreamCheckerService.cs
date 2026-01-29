@@ -27,7 +27,14 @@ public class LiveStreamCheckerService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await _readySignal.WaitForReadyAsync(stoppingToken);
+        try
+        {
+            await _readySignal.WaitForReadyAsync(stoppingToken);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
 
         Console.WriteLine($"LiveStreamCheckerService started. Window: {BotConfig.LiveCheckWindowStartHour}:00-{BotConfig.LiveCheckWindowEndHour}:00 {BotConfig.LiveCheckTimezoneId}. Interval: {BotConfig.LiveCheckIntervalMinutes} min (already live: {BotConfig.AlreadyLiveCheckIntervalMinutes} min).");
 
