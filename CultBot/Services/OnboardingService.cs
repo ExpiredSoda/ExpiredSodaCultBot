@@ -103,6 +103,23 @@ public class OnboardingService
         }
     }
 
+    /// <summary>Send the usual welcome message in #gateway (same as new join).</summary>
+    public async Task SendGatewayWelcomeForUserAsync(SocketGuildUser user)
+    {
+        var gatewayChannel = user.Guild.GetTextChannel(BotConfig.GatewayChannelId);
+        if (gatewayChannel == null)
+        {
+            Console.WriteLine($"ERROR: Gateway channel not found for recovery (ID: {BotConfig.GatewayChannelId})");
+            return;
+        }
+        var welcomeMessage = $"A new presence enters: {user.Mention}.\n\n" +
+            $"You have been marked as **The Uninitiated**.\n" +
+            $"To walk among us, you must complete the **Rite of Choosing** in <#{BotConfig.RoleRitualChannelId}>.\n" +
+            $"You have **{BotConfig.InitiationTimeoutHours} hours** before the veil closes.";
+        await gatewayChannel.SendMessageAsync(welcomeMessage);
+        Console.WriteLine($"✓ Recovery: sent welcome message to #gateway for {user.Username}");
+    }
+
     /// <summary>Send the ritual message and create a pending session for a user who has The Uninitiated role but no session (e.g. missed during bot downtime).</summary>
     public async Task<bool> SendRitualForUninitiatedUserAsync(SocketGuildUser user)
     {

@@ -55,11 +55,19 @@ public class InitiationExpirationService : BackgroundService
         foreach (var guild in _client.Guilds)
         {
             var uninitiatedRole = guild.GetRole(BotConfig.TheUninitiatedRoleId);
+            var silentWitness = guild.GetRole(BotConfig.SilentWitnessRoleId);
+            var neonDisciple = guild.GetRole(BotConfig.NeonDiscipleRoleId);
+            var veiledArchivist = guild.GetRole(BotConfig.VeiledArchivistRoleId);
             if (uninitiatedRole == null) continue;
 
-            var membersWithRole = guild.Users.Where(u => !u.IsBot && u.Roles.Contains(uninitiatedRole)).ToList();
-            foreach (var user in membersWithRole)
+            // Recover: anyone who has no path role (hasn't completed initiation) and no pending session
+            foreach (var user in guild.Users.Where(u => !u.IsBot))
             {
+                var hasPathRole = (silentWitness != null && user.Roles.Contains(silentWitness)) ||
+                    (neonDisciple != null && user.Roles.Contains(neonDisciple)) ||
+                    (veiledArchivist != null && user.Roles.Contains(veiledArchivist));
+                if (hasPathRole) continue;
+
                 var session = await _initiationService.GetPendingSessionAsync(user.Id, guild.Id);
                 if (session != null) continue;
 
@@ -72,6 +80,9 @@ public class InitiationExpirationService : BackgroundService
 
                 try
                 {
+                    if (!user.Roles.Contains(uninitiatedRole))
+                        await user.AddRoleAsync(uninitiatedRole);
+                    await _onboardingService.SendGatewayWelcomeForUserAsync(user);
                     await _onboardingService.SendRitualForUninitiatedUserAsync(user);
                 }
                 catch (Exception ex)
