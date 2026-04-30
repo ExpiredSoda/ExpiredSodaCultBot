@@ -64,9 +64,11 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<YouTubeLiveService>();
         services.AddSingleton<LiveStreamAnnouncementService>();
         services.AddSingleton<SlashCommandHandler>();
+        services.AddSingleton<GiveawayService>();
 
         services.AddHostedService<InitiationExpirationService>();
         services.AddHostedService<LiveStreamCheckerService>();
+        services.AddHostedService<GiveawayBackgroundService>();
 
         services.AddHostedService<BotService>();
 

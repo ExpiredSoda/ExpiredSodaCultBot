@@ -27,6 +27,13 @@ public class OnboardingService
             return;
         }
 
+        // Skip initiation for server owner and administrators
+        if (user.Id == user.Guild.OwnerId || user.GuildPermissions.Administrator)
+        {
+            await _dataCollectionService.TrackUserJoinAsync(user);
+            return;
+        }
+
         // Track user join
         await _dataCollectionService.TrackUserJoinAsync(user);
 
@@ -153,23 +160,24 @@ public class OnboardingService
     {
         try
         {
-            var user = interaction.User as SocketGuildUser;
-            if (user == null) return;
+            var clicker = interaction.User as SocketGuildUser;
+            if (clicker == null) return;
 
-            // Get the pending session for this user
-            var session = await _initiationService.GetPendingSessionAsync(user.Id, user.Guild.Id);
+            // Find who this ritual message belongs to (only that user can click)
+            var session = await _initiationService.GetPendingSessionByRitualMessageAsync(clicker.Guild.Id, interaction.Message.Id);
             if (session == null)
             {
-                await interaction.RespondAsync("You don't have a pending initiation.", ephemeral: true);
+                await interaction.RespondAsync("This ritual message is no longer valid.", ephemeral: true);
                 return;
             }
 
-            // Verify this is their ritual message
-            if (interaction.Message.Id != session.RitualMessageId)
+            if (clicker.Id != session.UserId)
             {
-                await interaction.RespondAsync("This is not your ritual message.", ephemeral: true);
+                await interaction.RespondAsync("Only the person this message is for can choose a role.", ephemeral: true);
                 return;
             }
+
+            var user = clicker;
 
             // Determine which role was chosen
             string chosenRoleName;
@@ -201,54 +209,86 @@ public class OnboardingService
                     return;
             }
 
-            // Remove The Uninitiated role
-            var uninitiatedRole = user.Guild.GetRole(BotConfig.TheUninitiatedRoleId);
-            if (uninitiatedRole != null && user.Roles.Contains(uninitiatedRole))
+            await interaction.DeferAsync(ephemeral: true);
+
+            // Add the chosen role before removing the holding role or completing the session.
+            var newRole = user.Guild.GetRole(chosenRoleId);
+            if (newRole == null)
             {
-                await user.RemoveRoleAsync(uninitiatedRole);
-                Console.WriteLine($"✓ Removed 'The Uninitiated' role from {user.Username}");
+                Console.WriteLine($"ERROR: Role '{chosenRoleName}' not found (ID: {chosenRoleId})");
+                await interaction.FollowupAsync("That role is not configured correctly. Please contact an administrator.", ephemeral: true);
+                return;
             }
 
-            // Add the chosen role
-            var newRole = user.Guild.GetRole(chosenRoleId);
-            if (newRole != null)
+            try
             {
                 await user.AddRoleAsync(newRole);
                 Console.WriteLine($"✓ Assigned '{chosenRoleName}' role to {user.Username}");
             }
-            else
+            catch (Exception ex)
             {
-                Console.WriteLine($"ERROR: Role '{chosenRoleName}' not found (ID: {chosenRoleId})");
+                Console.WriteLine($"ERROR: Could not assign role '{chosenRoleName}' to {user.Username}: {ex.Message}");
+                await interaction.FollowupAsync("I could not assign that role. Please contact an administrator.", ephemeral: true);
+                return;
+            }
+
+            // Remove The Uninitiated role after the path role is safely assigned.
+            var uninitiatedRole = user.Guild.GetRole(BotConfig.TheUninitiatedRoleId);
+            if (uninitiatedRole != null && user.Roles.Contains(uninitiatedRole))
+            {
+                try
+                {
+                    await user.RemoveRoleAsync(uninitiatedRole);
+                    Console.WriteLine($"✓ Removed 'The Uninitiated' role from {user.Username}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"WARNING: Could not remove 'The Uninitiated' role from {user.Username}: {ex.Message}");
+                }
             }
 
             // Delete the ritual message
-            await interaction.Message.DeleteAsync();
+            try
+            {
+                await interaction.Message.DeleteAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"WARNING: Could not delete ritual message {interaction.Message.Id}: {ex.Message}");
+            }
 
             // Post success message with GIF
             var ritualChannel = user.Guild.GetTextChannel(BotConfig.RoleRitualChannelId);
             if (ritualChannel != null)
             {
-                var successMessage = $"{user.Mention} has chosen the path of the **{chosenRoleName}**.\n{gifUrl}\nGreet them.";
+                var successMessage = $"{user.Mention} has chosen the path of the **{chosenRoleName}**.";
+                if (Uri.TryCreate(gifUrl, UriKind.Absolute, out _))
+                    successMessage += $"\n{gifUrl}";
+                successMessage += "\nGreet them.";
                 await ritualChannel.SendMessageAsync(successMessage);
             }
 
             // Mark session as completed
             await _initiationService.MarkSessionCompletedAsync(session.Id, roleKey);
             Console.WriteLine($"✓ Initiation completed for {user.Username} - chose {chosenRoleName}");
-
-            // Acknowledge the interaction
-            await interaction.DeferAsync();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error in HandleButtonInteractionAsync: {ex.Message}");
             try
             {
-                await interaction.RespondAsync("An error occurred. Please contact an administrator.", ephemeral: true);
+                await interaction.FollowupAsync("An error occurred. Please contact an administrator.", ephemeral: true);
             }
             catch
             {
-                // Interaction may have already been acknowledged
+                try
+                {
+                    await interaction.RespondAsync("An error occurred. Please contact an administrator.", ephemeral: true);
+                }
+                catch
+                {
+                    // Interaction may have already been acknowledged
+                }
             }
         }
     }

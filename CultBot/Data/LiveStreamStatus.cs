@@ -9,4 +9,6 @@ public class LiveStreamStatus
     public DateTime? LiveStartedAt { get; set; }
     public DateTime LastCheckedAt { get; set; }
     public bool AnnouncementSent { get; set; }
+    public string? LastAnnouncedVideoId { get; set; }
+    public DateTime? LastAnnouncementSentAt { get; set; }
 }

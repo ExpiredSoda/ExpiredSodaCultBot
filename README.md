@@ -17,9 +17,10 @@ A Discord bot with a cult-themed onboarding system for the Expired Soda Cult ser
 - Role-specific success messages with GIFs
 
 ### 🔴 YouTube Live Stream Announcements
-- **Automatic checking** every 10 minutes for live streams
-- **Smart detection** - only announces once per stream
-- **Manual `/live` command** for instant announcements
+- **All-day automatic checking** for live streams
+- **Quota-conscious polling** to stay within the default YouTube API daily quota
+- **Smart detection** - only announces once per YouTube stream video
+- **Manual `/live` command** for instant status checks
 - **@everyone notifications** in #transmissions channel
 - **Beautiful embeds** with stream links
 

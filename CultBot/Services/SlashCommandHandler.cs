@@ -25,11 +25,10 @@ public class SlashCommandHandler
     {
         if (_commandsRegistered)
             return;
-        await RegisterCommandsAsync();
-        _commandsRegistered = true;
+        _commandsRegistered = await RegisterCommandsAsync();
     }
 
-    private async Task RegisterCommandsAsync()
+    private async Task<bool> RegisterCommandsAsync()
     {
         try
         {
@@ -43,10 +42,12 @@ public class SlashCommandHandler
             await _client.CreateGlobalApplicationCommandAsync(liveCommand);
             
             Console.WriteLine("✓ Registered /live slash command");
+            return true;
         }
         catch (Exception ex)
         {
             Console.WriteLine($"ERROR registering slash commands: {ex.Message}");
+            return false;
         }
     }
 
@@ -60,13 +61,10 @@ public class SlashCommandHandler
                 await command.DeferAsync(ephemeral: true);
 
                 // Check if live and send announcement
-                await _liveStreamService.CheckAndAnnounceAsync(isManualTrigger: true);
-
-                // Get response message
-                var response = await _liveStreamService.GetManualAnnouncementResponseAsync();
+                var result = await _liveStreamService.CheckAndAnnounceAsync(isManualTrigger: true);
 
                 // Follow up with the result
-                await command.FollowupAsync(response, ephemeral: true);
+                await command.FollowupAsync(result.Message, ephemeral: true);
 
                 Console.WriteLine($"✓ /live command executed by {command.User.Username}");
             }

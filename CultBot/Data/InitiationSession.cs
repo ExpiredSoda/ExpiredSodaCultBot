@@ -24,4 +24,7 @@ public class InitiationSession
 
     public DateTime? CompletedTimeUtc { get; set; }
     public DateTime? ExpiredTimeUtc { get; set; }
+
+    /// <summary>When the "choose now or your time will end" reminder was sent; kick happens ReminderGracePeriodHours after this.</summary>
+    public DateTime? ReminderSentAt { get; set; }
 }

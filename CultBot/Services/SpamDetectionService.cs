@@ -46,10 +46,11 @@ public class SpamDetectionService
 
         // Clean old messages outside time window
         var cutoffTime = DateTime.UtcNow.AddSeconds(-BotConfig.SpamTimeWindowSeconds);
-        tracker.RecentMessageTimes.RemoveAll(t => t < cutoffTime);
-
-        // Add current message
-        tracker.RecentMessageTimes.Add(DateTime.UtcNow);
+        var recentMessageTimes = tracker.RecentMessageTimes
+            .Where(t => t >= cutoffTime)
+            .ToList();
+        recentMessageTimes.Add(DateTime.UtcNow);
+        tracker.RecentMessageTimes = recentMessageTimes;
 
         // Calculate spam score
         int spamScore = 0;
@@ -106,6 +107,8 @@ public class SpamDetectionService
 
         tracker.SpamScore = spamScore;
         tracker.LastSpamCheck = DateTime.UtcNow;
+        if (context.Entry(tracker).State != EntityState.Added)
+            context.Entry(tracker).Property(t => t.RecentMessageTimes).IsModified = true;
 
         await context.SaveChangesAsync();
 

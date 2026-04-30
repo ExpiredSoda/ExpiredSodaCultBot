@@ -17,6 +17,7 @@ public class BotService : IHostedService
     private readonly SpamDetectionService _spamDetectionService;
     private readonly ProfanityFilterService _profanityFilterService;
     private readonly DataCollectionService _dataCollectionService;
+    private readonly GiveawayService _giveawayService;
     private readonly IBotReadySignal _readySignal;
 
     public BotService(
@@ -29,6 +30,7 @@ public class BotService : IHostedService
         SpamDetectionService spamDetectionService,
         ProfanityFilterService profanityFilterService,
         DataCollectionService dataCollectionService,
+        GiveawayService giveawayService,
         IBotReadySignal readySignal)
     {
         _client = client;
@@ -40,6 +42,7 @@ public class BotService : IHostedService
         _spamDetectionService = spamDetectionService;
         _profanityFilterService = profanityFilterService;
         _dataCollectionService = dataCollectionService;
+        _giveawayService = giveawayService;
         _readySignal = readySignal;
     }
 
@@ -135,9 +138,27 @@ public class BotService : IHostedService
         var isInSlowMode = await _moderationService.IsUserInSlowModeAsync(guildUser.Id, guildUser.Guild.Id);
         if (isInSlowMode)
         {
-            await userMessage.DeleteAsync();
-            var warning = await userMessage.Channel.SendMessageAsync($"{guildUser.Mention}, you are in slow mode. Please wait before sending another message.");
-            _ = Task.Delay(5000).ContinueWith(_ => warning.DeleteAsync());
+            try
+            {
+                await userMessage.DeleteAsync();
+                var warning = await userMessage.Channel.SendMessageAsync($"{guildUser.Mention}, you are in slow mode. Please wait before sending another message.");
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(5000);
+                    try
+                    {
+                        await warning.DeleteAsync();
+                    }
+                    catch
+                    {
+                        // Warning may already be gone, or the bot may lack cleanup permissions.
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ERROR enforcing slow mode for {guildUser.Username}: {ex.Message}");
+            }
             return;
         }
 
@@ -177,6 +198,9 @@ public class BotService : IHostedService
     {
         if (interaction is SocketMessageComponent component)
         {
+            var handled = await _giveawayService.HandleDrawButtonAsync(component);
+            if (handled)
+                return;
             await _onboardingService.HandleButtonInteractionAsync(component);
         }
     }

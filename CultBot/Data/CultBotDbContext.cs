@@ -17,6 +17,7 @@ public class CultBotDbContext : DbContext
     public DbSet<GameActivity> GameActivities { get; set; } = null!;
     public DbSet<ModerationLog> ModerationLogs { get; set; } = null!;
     public DbSet<SpamTracker> SpamTrackers { get; set; } = null!;
+    public DbSet<GiveawayState> GiveawayStates { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -25,14 +26,19 @@ public class CultBotDbContext : DbContext
         modelBuilder.Entity<InitiationSession>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.HasIndex(e => new { e.UserId, e.GuildId });
+            entity.HasIndex(e => new { e.UserId, e.GuildId, e.Status });
+            entity.HasIndex(e => new { e.UserId, e.GuildId })
+                .IsUnique()
+                .HasFilter("\"Status\" = 'Pending'");
+            entity.HasIndex(e => new { e.GuildId, e.RitualMessageId })
+                .IsUnique();
             entity.HasIndex(e => e.Status);
         });
 
         modelBuilder.Entity<LiveStreamStatus>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.Platform);
+            entity.HasIndex(e => e.Platform).IsUnique();
         });
 
         modelBuilder.Entity<UserMessage>(entity =>
@@ -71,6 +77,12 @@ public class CultBotDbContext : DbContext
             // Store list as JSON in PostgreSQL
             entity.Property(e => e.RecentMessageTimes)
                 .HasColumnType("jsonb");
+        });
+
+        modelBuilder.Entity<GiveawayState>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.GuildId).IsUnique();
         });
     }
 }

@@ -23,6 +23,12 @@ public class ModerationService
     {
         try
         {
+            if (ShouldSkipAutomatedModeration(user))
+            {
+                Console.WriteLine($"Skipping automated warning for protected user {user.Username}.");
+                return;
+            }
+
             await using var context = await _contextFactory.CreateDbContextAsync();
 
             // Log the warning
@@ -85,6 +91,12 @@ public class ModerationService
     {
         try
         {
+            if (ShouldSkipAutomatedModeration(user))
+            {
+                Console.WriteLine($"Skipping automated slow mode for protected user {user.Username}.");
+                return;
+            }
+
             await using var context = await _contextFactory.CreateDbContextAsync();
 
             // Update spam tracker - create if doesn't exist
@@ -172,6 +184,15 @@ public class ModerationService
     {
         try
         {
+            if (ShouldSkipAutomatedModeration(user))
+            {
+                Console.WriteLine($"Skipping automated ban for protected user {user.Username}.");
+                return;
+            }
+
+            // Execute the ban first so the database does not claim a failed ban succeeded.
+            await user.BanAsync(0, reason);
+
             await using var context = await _contextFactory.CreateDbContextAsync();
 
             // Log the ban
@@ -192,9 +213,6 @@ public class ModerationService
             activity.LastUpdated = DateTime.UtcNow;
 
             await context.SaveChangesAsync();
-
-            // Execute the ban
-            await user.BanAsync(0, reason);
 
             Console.WriteLine($"🔨 Banned {user.Username}: {reason}");
 
@@ -225,6 +243,11 @@ public class ModerationService
         }
 
         return activity;
+    }
+
+    private static bool ShouldSkipAutomatedModeration(SocketGuildUser user)
+    {
+        return user.Id == user.Guild.OwnerId || user.GuildPermissions.Administrator;
     }
 
     private async Task LogToModChannelAsync(SocketGuild guild, string message)

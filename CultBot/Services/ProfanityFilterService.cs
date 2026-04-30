@@ -117,13 +117,13 @@ public class ProfanityFilterService
             };
             context.ModerationLogs.Add(moderationLog);
 
+            await context.SaveChangesAsync();
+
             // Get offense count
             var offenseCount = await context.ModerationLogs
                 .Where(m => m.UserId == user.Id && m.GuildId == user.Guild.Id && 
                            m.Action == "MessageDeleted" && m.Reason.Contains(category))
                 .CountAsync();
-
-            await context.SaveChangesAsync();
 
             // Escalate based on offense count
             if (offenseCount == 1)

@@ -60,9 +60,12 @@ public class InitiationExpirationService : BackgroundService
             var veiledArchivist = guild.GetRole(BotConfig.VeiledArchivistRoleId);
             if (uninitiatedRole == null) continue;
 
-            // Recover: anyone who has no path role (hasn't completed initiation) and no pending session
+            // Recover: anyone who has no path role (hasn't completed initiation) and no pending session (skip server owner and admins)
             foreach (var user in guild.Users.Where(u => !u.IsBot))
             {
+                if (user.Id == guild.OwnerId || user.GuildPermissions.Administrator)
+                    continue;
+
                 var hasPathRole = (silentWitness != null && user.Roles.Contains(silentWitness)) ||
                     (neonDisciple != null && user.Roles.Contains(neonDisciple)) ||
                     (veiledArchivist != null && user.Roles.Contains(veiledArchivist));
@@ -112,36 +115,81 @@ public class InitiationExpirationService : BackgroundService
                     continue;
                 }
 
-                // Delete the ritual message
+                // Never kick server owner or administrators
+                if (user.Id == guild.OwnerId || user.GuildPermissions.Administrator)
+                {
+                    await _initiationService.MarkSessionExpiredAsync(session.Id);
+                    continue;
+                }
+
                 var ritualChannel = guild.GetTextChannel(session.RitualChannelId);
+
+                // If we haven't sent the reminder yet, send it and give them ReminderGracePeriodHours (e.g. 24h) more
+                if (session.ReminderSentAt == null)
+                {
+                    var reminderMessage = $"{user.Mention} — the veil grows thin. Your time to choose a path has all but slipped away.\n\n" +
+                        $"**Choose your role now**, or your time in this server will come to a close in **{BotConfig.ReminderGracePeriodHours} hours**. The Cult does not wait forever.";
+                    var reminderDelivered = false;
+
+                    if (ritualChannel != null)
+                    {
+                        try
+                        {
+                            await ritualChannel.SendMessageAsync(reminderMessage);
+                            reminderDelivered = true;
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Could not send expiration reminder: {ex.Message}");
+                        }
+                    }
+
+                    if (!reminderDelivered)
+                    {
+                        try
+                        {
+                            var dmChannel = await user.CreateDMChannelAsync();
+                            await dmChannel.SendMessageAsync(reminderMessage);
+                            reminderDelivered = true;
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Could not DM expiration reminder to {user.Username}: {ex.Message}");
+                        }
+                    }
+
+                    await _initiationService.MarkReminderSentAsync(session.Id);
+                    var deliveryStatus = reminderDelivered ? "Sent" : "Could not deliver";
+                    Console.WriteLine($"{deliveryStatus} expiration reminder to {user.Username}; grace period of {BotConfig.ReminderGracePeriodHours}h started.");
+                    continue;
+                }
+
+                // Reminder was sent; check if grace period has passed
+                var kickAfter = session.ReminderSentAt.Value.AddHours(BotConfig.ReminderGracePeriodHours);
+                if (DateTime.UtcNow < kickAfter)
+                    continue;
+
+                // Grace period over — kick
                 if (ritualChannel != null)
                 {
                     try
                     {
                         var message = await ritualChannel.GetMessageAsync(session.RitualMessageId);
                         if (message != null)
-                        {
                             await message.DeleteAsync();
-                        }
                     }
                     catch (Exception ex)
                     {
                         Console.WriteLine($"Could not delete ritual message: {ex.Message}");
                     }
 
-                    // Post failure message
-                    var failureMessage = $"{user.Mention} has failed to complete the rites.\n" +
-                                       $"They have been cast out of the Cult.";
+                    var failureMessage = $"{user.Mention} has failed to complete the rites.\nThey have been cast out of the Cult.";
                     await ritualChannel.SendMessageAsync(failureMessage);
                 }
 
-                // Kick the user
-                await user.KickAsync("Failed to complete initiation within 24 hours");
-
-                // Mark session as expired
+                await user.KickAsync("Failed to complete initiation within the allowed time");
                 await _initiationService.MarkSessionExpiredAsync(session.Id);
-
-                Console.WriteLine($"Kicked user {user.Username} (ID: {user.Id}) for failing initiation.");
+                Console.WriteLine($"Kicked user {user.Username} (ID: {user.Id}) for failing initiation after grace period.");
             }
             catch (Exception ex)
             {

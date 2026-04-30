@@ -66,7 +66,7 @@ public class DataCollectionService
             }
 
             // Check for game mentions in the message
-            await TrackGameMentionsAsync(user, message.Content, context);
+            TrackGameMentions(user, message.Content, context);
 
             await context.SaveChangesAsync();
         }
@@ -236,7 +236,7 @@ public class DataCollectionService
         }
     }
 
-    private async Task TrackGameMentionsAsync(SocketGuildUser user, string content, CultBotDbContext context)
+    private void TrackGameMentions(SocketGuildUser user, string content, CultBotDbContext context)
     {
         try
         {

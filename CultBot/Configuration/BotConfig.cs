@@ -20,6 +20,9 @@ public static class BotConfig
     // Initiation timeout in hours
     public const int InitiationTimeoutHours = 24;
 
+    /// <summary>Hours after the reminder message before we kick (e.g. 24 = one more day to choose).</summary>
+    public const int ReminderGracePeriodHours = 24;
+
     // How often to check for expired initiations (in minutes)
     public const int ExpirationCheckIntervalMinutes = 5;
 
@@ -35,19 +38,38 @@ public static class BotConfig
     public const ulong TransmissionsChannelId = 1442967472645865686;
     public const string YouTubeChannelHandle = "@expiredsodaofficial";
     public const string YouTubeChannelId = ""; // Will be auto-resolved from handle, or set manually
-    public const int LiveCheckIntervalMinutes = 10;
+    /// <summary>All-day YouTube live polling interval. Uses search.list, which is quota-expensive, so keep this conservative.</summary>
+    public const int LiveCheckIntervalMinutes = 20;
     /// <summary>When already live and announced, check less often (e.g. to detect stream end).</summary>
-    public const int AlreadyLiveCheckIntervalMinutes = 30;
-    /// <summary>Only run YouTube live check between these hours (EST). 20 = 8pm, 5 = 5am.</summary>
-    public const int LiveCheckWindowStartHour = 20;
-    public const int LiveCheckWindowEndHour = 5;
-    public const string LiveCheckTimezoneId = "America/New_York";
+    public const int AlreadyLiveCheckIntervalMinutes = 60;
 
     /// <summary>Platform key for LiveStreamStatus (e.g. "YouTube").</summary>
     public const string LiveStreamPlatformYouTube = "YouTube";
 
+    // Giveaway (🎁 | giveaways) - Set GiveawayChannelId after creating the channel
+    public static readonly ulong GiveawayChannelId = 0; // Replace with your giveaway channel ID
+    public const int MemberGoal = 100; // First goal: 100 initiated members
+    public const int NextGoalAfterGiveaway = 200; // Goal for the next giveaway after first is run
+    public const string GiveawayPrize1 = "Your pick of $60 digital gift card";
+    public const string GiveawayPrize2 = "Discord Nitro";
+    public const string GiveawayPrize3 = "Custom role";
+    /// <summary>How often to check member count and update giveaway progress (minutes).</summary>
+    public const int GiveawayCheckIntervalMinutes = 10;
+    /// <summary>Send a weekly progress update message every N days (even if count unchanged).</summary>
+    public const int WeeklyUpdateIntervalDays = 7;
+    /// <summary>Discord username of the host who can press the draw button (e.g. expiredsoda94).</summary>
+    public const string GiveawayHostUsername = "expiredsoda94";
+    /// <summary>Preferred giveaway host Discord user ID. Leave 0 while giveaway is hidden/unconfigured.</summary>
+    public static readonly ulong GiveawayHostUserId = 0;
+    /// <summary>Custom ID for the "Draw winners" button when goal is reached.</summary>
+    public const string GiveawayDrawButtonCustomId = "giveaway_draw";
+    /// <summary>Duration of the random "cycling" effect before revealing winners (seconds).</summary>
+    public const int GiveawayCycleDurationSeconds = 8;
+    /// <summary>How often to update the message during the cycle (milliseconds).</summary>
+    public const int GiveawayCycleUpdateIntervalMs = 1000;
+
     // Moderation Configuration
-    public const ulong ModLogChannelId = 1445569622664544309; // #mod-log - REPLACE THIS (optional)
+    public static readonly ulong ModLogChannelId = 1445569622664544309; // #mod-log - REPLACE THIS (optional)
     
     // Spam Detection Settings
     public const int SpamMessageThreshold = 5; // Messages in time window
