@@ -37,33 +37,45 @@ public class SlashCommandHandler
     {
         try
         {
-            var liveCommand = new SlashCommandBuilder()
-                .WithName("live")
-                .WithDescription("Manually trigger a live stream announcement")
-                .WithDefaultMemberPermissions(GuildPermission.Administrator) // Only admins can use this
-                .Build();
+            var commands = BuildCommandProperties();
+            await _client.BulkOverwriteGlobalApplicationCommandsAsync(Array.Empty<ApplicationCommandProperties>());
 
-            var memeNowCommand = new SlashCommandBuilder()
-                .WithName("meme-now")
-                .WithDescription("Post one image meme now")
-                .WithDefaultMemberPermissions(GuildPermission.Administrator)
-                .Build();
+            foreach (var guild in _client.Guilds)
+            {
+                await guild.BulkOverwriteApplicationCommandAsync(commands);
+                Console.WriteLine($"✓ Registered /live, /meme, and /meme-now slash commands in {guild.Name} ({guild.Id})");
+            }
 
-            var memeCommand = new SlashCommandBuilder()
-                .WithName("meme")
-                .WithDescription("Request one image meme")
-                .Build();
-
-            await _client.BulkOverwriteGlobalApplicationCommandsAsync(new[] { liveCommand, memeCommand, memeNowCommand });
-
-            Console.WriteLine("✓ Registered /live, /meme, and /meme-now slash commands");
+            Console.WriteLine("✓ Cleared global slash commands; using guild commands for immediate updates.");
             return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"ERROR registering slash commands: {ex.Message}");
+            Console.WriteLine($"ERROR registering slash commands: {ex}");
             return false;
         }
+    }
+
+    private static ApplicationCommandProperties[] BuildCommandProperties()
+    {
+        var liveCommand = new SlashCommandBuilder()
+            .WithName("live")
+            .WithDescription("Manually trigger a live stream announcement")
+            .WithDefaultMemberPermissions(GuildPermission.Administrator)
+            .Build();
+
+        var memeNowCommand = new SlashCommandBuilder()
+            .WithName("meme-now")
+            .WithDescription("Post one image meme now")
+            .WithDefaultMemberPermissions(GuildPermission.Administrator)
+            .Build();
+
+        var memeCommand = new SlashCommandBuilder()
+            .WithName("meme")
+            .WithDescription("Request one image meme")
+            .Build();
+
+        return new ApplicationCommandProperties[] { liveCommand, memeCommand, memeNowCommand };
     }
 
     private async Task HandleSlashCommandAsync(SocketSlashCommand command)
