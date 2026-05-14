@@ -189,6 +189,7 @@ public class MemePostingService
         }
 
         var channels = GetTargetChannels(request);
+        Console.WriteLine($"Meme post request {request.Kind}: target channels found = {channels.Count}.");
         if (channels.Count == 0)
         {
             return new MemePostResult(
@@ -228,6 +229,7 @@ public class MemePostingService
         var excludedSourceIds = new HashSet<string>(postedSourceIds, StringComparer.OrdinalIgnoreCase);
         var excludedHashes = new HashSet<string>(postedHashes, StringComparer.OrdinalIgnoreCase);
         var fetchResult = await _tumblrMemeProvider.GetCandidatesAsync(excludedSourceIds, cancellationToken);
+        Console.WriteLine($"Tumblr meme fetch result: {fetchResult.Status}, candidates = {fetchResult.Candidates.Count}.");
 
         if (fetchResult.Status == MemeFetchStatus.RateLimited)
         {

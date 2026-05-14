@@ -70,6 +70,8 @@ public class SlashCommandHandler
     {
         try
         {
+            Console.WriteLine($"Received /{command.Data.Name} command from {command.User.Username} ({command.User.Id}).");
+
             if (command.Data.Name == "live")
             {
                 // Defer the response since YouTube API call might take a moment
@@ -85,44 +87,52 @@ public class SlashCommandHandler
             }
             else if (command.Data.Name == "meme-now")
             {
-                await command.DeferAsync(ephemeral: true);
+                await command.RespondAsync("Looking for a meme...", ephemeral: true);
 
                 var guildUser = command.User as SocketGuildUser;
+                Console.WriteLine($"Processing /meme-now for guild {guildUser?.Guild.Id.ToString() ?? "unknown"}.");
                 var result = await _memePostingService.PostManualMemeAsync(guildUser?.Guild.Id);
 
-                await command.FollowupAsync(result.Message, ephemeral: true);
+                await command.ModifyOriginalResponseAsync(message => message.Content = result.Message);
 
-                Console.WriteLine($"✓ /meme-now command executed by {command.User.Username}");
+                Console.WriteLine($"✓ /meme-now command executed by {command.User.Username}. Result: {result.Status}");
             }
             else if (command.Data.Name == "meme")
             {
-                await command.DeferAsync(ephemeral: true);
+                await command.RespondAsync("Looking for a meme...", ephemeral: true);
 
                 if (command.User is not SocketGuildUser guildUser)
                 {
-                    await command.FollowupAsync("Use this command inside the server.", ephemeral: true);
+                    await command.ModifyOriginalResponseAsync(message => message.Content = "Use this command inside the server.");
                     return;
                 }
 
                 if (!HasInitiatedRole(guildUser))
                 {
-                    await command.FollowupAsync("Only initiated members can request memes.", ephemeral: true);
+                    await command.ModifyOriginalResponseAsync(message => message.Content = "Only initiated members can request memes.");
                     return;
                 }
 
                 var result = await _memePostingService.PostUserRequestedMemeAsync(guildUser.Id, guildUser.Guild.Id);
 
-                await command.FollowupAsync(result.Message, ephemeral: true);
+                await command.ModifyOriginalResponseAsync(message => message.Content = result.Message);
 
-                Console.WriteLine($"✓ /meme command executed by {command.User.Username}");
+                Console.WriteLine($"✓ /meme command executed by {command.User.Username}. Result: {result.Status}");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"ERROR handling slash command: {ex.Message}");
+            Console.WriteLine($"ERROR handling /{command.Data.Name} slash command: {ex}");
             try
             {
-                await command.FollowupAsync("An error occurred while processing the command.", ephemeral: true);
+                if (command.HasResponded)
+                {
+                    await command.FollowupAsync("An error occurred while processing the command.", ephemeral: true);
+                }
+                else
+                {
+                    await command.RespondAsync("An error occurred while processing the command.", ephemeral: true);
+                }
             }
             catch
             {
