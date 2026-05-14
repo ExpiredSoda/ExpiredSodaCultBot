@@ -183,8 +183,8 @@ public class BotService : IHostedService
         if (user is not SocketGuildUser guildUser) return;
 
         // Check if game activity changed
-        var beforeGame = before.Activities.FirstOrDefault(a => a.Type == ActivityType.Playing);
-        var afterGame = after.Activities.FirstOrDefault(a => a.Type == ActivityType.Playing);
+        var beforeGame = before.Activities?.FirstOrDefault(a => a.Type == ActivityType.Playing);
+        var afterGame = after.Activities?.FirstOrDefault(a => a.Type == ActivityType.Playing);
 
         if (beforeGame?.Name != afterGame?.Name)
         {
