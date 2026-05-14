@@ -5,6 +5,7 @@ using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Npgsql;
 
 namespace CultBot.Extensions;
 
@@ -41,8 +42,14 @@ public static class ServiceCollectionExtensions
         else
         {
             connectionString = ParseRailwayConnectionString(connectionString);
-            services.AddDbContextFactory<CultBotDbContext>(options =>
-                options.UseNpgsql(connectionString));
+            services.AddSingleton(_ =>
+            {
+                var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
+                dataSourceBuilder.EnableDynamicJson();
+                return dataSourceBuilder.Build();
+            });
+            services.AddDbContextFactory<CultBotDbContext>((serviceProvider, options) =>
+                options.UseNpgsql(serviceProvider.GetRequiredService<NpgsqlDataSource>()));
         }
 
         return services;
