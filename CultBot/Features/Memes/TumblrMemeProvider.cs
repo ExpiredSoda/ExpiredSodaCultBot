@@ -28,6 +28,61 @@ public class TumblrMemeProvider
         "war"
     };
 
+    private static readonly string[] MemeSignalTerms =
+    {
+        "meme",
+        "memes",
+        "humor",
+        "funny",
+        "joke",
+        "jokes",
+        "lol",
+        "lmao",
+        "rofl",
+        "reaction",
+        "relatable",
+        "shitpost",
+        "shitposting",
+        "dank",
+        "gaming memes",
+        "gamer memes",
+        "black twitter memes",
+        "black people twitter memes"
+    };
+
+    private static readonly string[] NonMemePhotoTerms =
+    {
+        "selfie",
+        "portrait",
+        "photoshoot",
+        "photo shoot",
+        "model",
+        "modeling",
+        "fashion",
+        "beauty",
+        "makeup",
+        "hair",
+        "hairstyle",
+        "wig",
+        "nails",
+        "outfit",
+        "fit check",
+        "pose",
+        "posing",
+        "glamour",
+        "baddie",
+        "thirst trap",
+        "thirsttrap",
+        "sexy",
+        "lingerie",
+        "bikini",
+        "swimsuit",
+        "bodycon",
+        "onlyfans",
+        "link in bio",
+        "photography"
+    };
+
     public TumblrMemeProvider(HttpClient httpClient)
     {
         _httpClient = httpClient;
@@ -141,7 +196,7 @@ public class TumblrMemeProvider
         var candidates = new List<MemeCandidate>();
         foreach (var post in posts.EnumerateArray())
         {
-            if (TryCreateCandidate(post, excludedSourcePostIds, out var candidate))
+            if (TryCreateCandidate(post, tag, excludedSourcePostIds, out var candidate))
                 candidates.Add(candidate);
         }
 
@@ -150,6 +205,7 @@ public class TumblrMemeProvider
 
     private static bool TryCreateCandidate(
         JsonElement post,
+        string fetchedTag,
         IReadOnlySet<string> excludedSourcePostIds,
         out MemeCandidate candidate)
     {
@@ -166,8 +222,13 @@ public class TumblrMemeProvider
         if (type is "video" or "audio" or "link" or "quote" or "answer" or "chat")
             return false;
 
-        if (HasMatureSignal(post) || ContainsRiskyTerms(post))
+        if (HasMatureSignal(post) ||
+            ContainsRiskyTerms(post) ||
+            ContainsNonMemePhotoTerms(post) ||
+            !HasMemeSignal(post, fetchedTag))
+        {
             return false;
+        }
 
         if (!TryGetSingleStaticImageUrl(post, out var imageUrl, out var extension))
             return false;
@@ -306,7 +367,22 @@ public class TumblrMemeProvider
 
     private static bool ContainsRiskyTerms(JsonElement post)
     {
-        var values = new List<string>();
+        return ContainsAnyTerm(GetSearchableText(post), RiskyTerms);
+    }
+
+    private static bool HasMemeSignal(JsonElement post, string fetchedTag)
+    {
+        return ContainsAnyTerm(GetSearchableText(post, fetchedTag), MemeSignalTerms);
+    }
+
+    private static bool ContainsNonMemePhotoTerms(JsonElement post)
+    {
+        return ContainsAnyTerm(GetSearchableText(post), NonMemePhotoTerms);
+    }
+
+    private static string GetSearchableText(JsonElement post, params string[] additionalValues)
+    {
+        var values = new List<string>(additionalValues);
         AddStringIfPresent(post, values, "summary");
         AddStringIfPresent(post, values, "caption");
         AddStringIfPresent(post, values, "body");
@@ -329,10 +405,14 @@ public class TumblrMemeProvider
                 AddStringIfPresent(block, values, "text");
         }
 
-        var text = StripHtml(string.Join(' ', values)).ToLowerInvariant();
-        foreach (var term in RiskyTerms)
+        return StripHtml(string.Join(' ', values)).ToLowerInvariant();
+    }
+
+    private static bool ContainsAnyTerm(string text, IEnumerable<string> terms)
+    {
+        foreach (var term in terms)
         {
-            if (term.Contains(' ', StringComparison.Ordinal))
+            if (term.Contains(' '))
             {
                 if (text.Contains(term, StringComparison.OrdinalIgnoreCase))
                     return true;

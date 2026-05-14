@@ -100,7 +100,9 @@ public class CultBotDbContext : DbContext
         modelBuilder.Entity<MemeRequestUsage>(entity =>
         {
             entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.CommandName, e.RequestedAtUtc });
             entity.HasIndex(e => new { e.UserId, e.EasternDateKey, e.Result });
+            entity.HasIndex(e => new { e.UserId, e.EasternDateKey, e.CommandName });
             entity.HasIndex(e => new { e.UserId, e.RequestedAtUtc });
         });
     }

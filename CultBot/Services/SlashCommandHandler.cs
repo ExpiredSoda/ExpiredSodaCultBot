@@ -103,7 +103,10 @@ public class SlashCommandHandler
 
                 var guildUser = command.User as SocketGuildUser;
                 Console.WriteLine($"Processing /meme-now for guild {guildUser?.Guild.Id.ToString() ?? "unknown"}.");
-                var result = await _memePostingService.PostManualMemeAsync(guildUser?.Guild.Id);
+                var result = await _memePostingService.PostManualMemeAsync(
+                    command.User.Id,
+                    guildUser?.Guild.Id,
+                    GetDisplayName(command.User));
 
                 await command.ModifyOriginalResponseAsync(message => message.Content = result.Message);
 
@@ -121,11 +124,19 @@ public class SlashCommandHandler
 
                 if (!HasInitiatedRole(guildUser))
                 {
+                    await _memePostingService.RecordDeniedUserMemeAsync(
+                        guildUser.Id,
+                        guildUser.Guild.Id,
+                        guildUser.DisplayName,
+                        "Only initiated members can request memes.");
                     await command.ModifyOriginalResponseAsync(message => message.Content = "Only initiated members can request memes.");
                     return;
                 }
 
-                var result = await _memePostingService.PostUserRequestedMemeAsync(guildUser.Id, guildUser.Guild.Id);
+                var result = await _memePostingService.PostUserRequestedMemeAsync(
+                    guildUser.Id,
+                    guildUser.Guild.Id,
+                    guildUser.DisplayName);
 
                 await command.ModifyOriginalResponseAsync(message => message.Content = result.Message);
 
@@ -159,5 +170,12 @@ public class SlashCommandHandler
             role.Id == BotConfig.SilentWitnessRoleId ||
             role.Id == BotConfig.NeonDiscipleRoleId ||
             role.Id == BotConfig.VeiledArchivistRoleId);
+    }
+
+    private static string GetDisplayName(SocketUser user)
+    {
+        return user is SocketGuildUser guildUser
+            ? guildUser.DisplayName
+            : user.GlobalName ?? user.Username;
     }
 }

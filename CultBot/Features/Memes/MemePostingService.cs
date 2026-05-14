@@ -44,17 +44,39 @@ public class MemePostingService
         return true;
     }
 
-    public Task<MemePostResult> PostManualMemeAsync(ulong? targetGuildId = null, CancellationToken cancellationToken = default)
+    public Task<MemePostResult> PostManualMemeAsync(
+        ulong userId,
+        ulong? targetGuildId = null,
+        string? username = null,
+        CancellationToken cancellationToken = default)
     {
-        return PostMemeAsync(MemePostRequest.Admin(targetGuildId), cancellationToken);
+        return PostMemeAsync(MemePostRequest.Admin(userId, targetGuildId, username), cancellationToken);
     }
 
     public Task<MemePostResult> PostUserRequestedMemeAsync(
         ulong userId,
         ulong targetGuildId,
+        string? username = null,
         CancellationToken cancellationToken = default)
     {
-        return PostMemeAsync(MemePostRequest.User(userId, targetGuildId), cancellationToken);
+        return PostMemeAsync(MemePostRequest.User(userId, targetGuildId, username), cancellationToken);
+    }
+
+    public async Task RecordDeniedUserMemeAsync(
+        ulong userId,
+        ulong guildId,
+        string? username,
+        string reason,
+        CancellationToken cancellationToken = default)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+        var result = new MemePostResult(MemePostStatus.Unauthorized, false, true, reason);
+        await RecordCommandUsageAsync(
+            context,
+            MemePostRequest.User(userId, guildId, username),
+            result,
+            DateTime.UtcNow,
+            cancellationToken);
     }
 
     public Task<MemePostResult> PostScheduledMemeAsync(MemeSlot slot, CancellationToken cancellationToken = default)
@@ -80,9 +102,9 @@ public class MemePostingService
 
             var result = await PostMemeCoreAsync(context, request, cancellationToken);
 
-            if (request.Kind == MemePostRequestKind.User)
+            if (request.Kind is MemePostRequestKind.User or MemePostRequestKind.Admin)
             {
-                await RecordUserRequestAsync(context, request, result, nowUtc, cancellationToken);
+                await RecordCommandUsageAsync(context, request, result, nowUtc, cancellationToken);
             }
 
             return result;
@@ -96,9 +118,9 @@ public class MemePostingService
                 false,
                 "I couldn't fetch a meme right now. Try again in a bit.");
 
-            if (request.Kind == MemePostRequestKind.User)
+            if (request.Kind is MemePostRequestKind.User or MemePostRequestKind.Admin)
             {
-                await TryRecordFailedUserRequestAsync(request, result, nowUtc, cancellationToken);
+                await TryRecordFailedCommandUsageAsync(request, result, nowUtc, cancellationToken);
             }
 
             return result;
@@ -122,7 +144,7 @@ public class MemePostingService
                 false,
                 true,
                 "Use this command inside the server.");
-            await RecordUserRequestAsync(context, request, result, nowUtc, cancellationToken);
+            await RecordCommandUsageAsync(context, request, result, nowUtc, cancellationToken);
             return result;
         }
 
@@ -131,6 +153,8 @@ public class MemePostingService
         var successesToday = await context.MemeRequestUsages
             .CountAsync(
                 u => u.UserId == userId &&
+                    u.RequestKind == nameof(MemePostRequestKind.User) &&
+                    u.CommandName == "/meme" &&
                     u.EasternDateKey == dateKey &&
                     u.Result == nameof(MemePostStatus.Posted),
                 cancellationToken);
@@ -142,12 +166,14 @@ public class MemePostingService
                 false,
                 true,
                 $"You've used your {BotConfig.MemeDailyUserRequestLimit} meme requests for today. Try again tomorrow.");
-            await RecordUserRequestAsync(context, request, result, nowUtc, cancellationToken);
+            await RecordCommandUsageAsync(context, request, result, nowUtc, cancellationToken);
             return result;
         }
 
         var lastAttempt = await context.MemeRequestUsages
             .Where(u => u.UserId == userId &&
+                u.RequestKind == nameof(MemePostRequestKind.User) &&
+                u.CommandName == "/meme" &&
                 u.Result != nameof(MemePostStatus.Cooldown) &&
                 u.Result != nameof(MemePostStatus.DailyLimit) &&
                 u.Result != nameof(MemePostStatus.Unauthorized))
@@ -166,7 +192,7 @@ public class MemePostingService
                     true,
                     $"Slow down just a touch. You can request another meme in {FormatDuration(retryAfter)}.",
                     retryAfter);
-                await RecordUserRequestAsync(context, request, result, nowUtc, cancellationToken);
+                await RecordCommandUsageAsync(context, request, result, nowUtc, cancellationToken);
                 return result;
             }
         }
@@ -283,6 +309,7 @@ public class MemePostingService
             }
 
             var sentCount = 0;
+            MemePostResult? postedResult = null;
             foreach (var target in channels)
             {
                 if (request.Kind == MemePostRequestKind.Scheduled)
@@ -296,7 +323,10 @@ public class MemePostingService
                 }
 
                 using var stream = new MemoryStream(downloaded.Image.Bytes, writable: false);
-                var message = await target.Channel.SendFileAsync(stream, downloaded.Image.FileName);
+                var messageText = request.Kind is MemePostRequestKind.User or MemePostRequestKind.Admin
+                    ? BuildConjureMessage(request)
+                    : null;
+                var message = await target.Channel.SendFileAsync(stream, downloaded.Image.FileName, messageText);
 
                 context.PostedMemes.Add(new PostedMeme
                 {
@@ -314,16 +344,28 @@ public class MemePostingService
 
                 await context.SaveChangesAsync(cancellationToken);
                 sentCount++;
-                Console.WriteLine($"Posted meme {candidate.Source}:{candidate.SourcePostId} to #{target.Channel.Name} for slot {request.Slot.LocalLabel}.");
-            }
+                Console.WriteLine(
+                    $"Posted meme {candidate.Source}:{candidate.SourcePostId} to #{target.Channel.Name} " +
+                    $"for slot {request.Slot.LocalLabel}. ImageUrl={candidate.ImageUrl} Permalink={candidate.Permalink} " +
+                    $"RequestedBy={request.RequestedByUserId?.ToString() ?? "scheduler"}");
 
-            if (sentCount > 0)
-            {
-                return new MemePostResult(
+                postedResult ??= new MemePostResult(
                     MemePostStatus.Posted,
                     true,
                     false,
-                    "Posted a meme in the memes channel.");
+                    "Posted a meme in the memes channel.",
+                    Source: candidate.Source,
+                    SourcePostId: candidate.SourcePostId,
+                    ImageUrl: candidate.ImageUrl,
+                    SourcePermalink: candidate.Permalink,
+                    ImageSha256: downloaded.Image.ImageSha256,
+                    DiscordMessageId: message.Id,
+                    ChannelId: target.Channel.Id);
+            }
+
+            if (sentCount > 0 && postedResult != null)
+            {
+                return postedResult;
             }
         }
 
@@ -365,27 +407,65 @@ public class MemePostingService
             .ToList();
     }
 
-    private async Task RecordUserRequestAsync(
+    private async Task RecordCommandUsageAsync(
         CultBotDbContext context,
         MemePostRequest request,
         MemePostResult result,
         DateTime requestedAtUtc,
         CancellationToken cancellationToken)
     {
+        var userId = request.RequestedByUserId ?? 0;
+        var guildId = request.TargetGuildId ?? 0;
+        var dateKey = MemeSchedule.GetEasternDateKey(requestedAtUtc);
+        var attemptsToday = userId == 0
+            ? 0
+            : await context.MemeRequestUsages.CountAsync(
+                usage => usage.UserId == userId &&
+                    usage.EasternDateKey == dateKey &&
+                    usage.CommandName == request.CommandName,
+                cancellationToken) + 1;
+        var successfulRequestsToday = userId == 0
+            ? 0
+            : await context.MemeRequestUsages.CountAsync(
+                usage => usage.UserId == userId &&
+                    usage.EasternDateKey == dateKey &&
+                    usage.CommandName == request.CommandName &&
+                    usage.Result == nameof(MemePostStatus.Posted),
+                cancellationToken) + (result.Status == MemePostStatus.Posted ? 1 : 0);
+
         context.MemeRequestUsages.Add(new MemeRequestUsage
         {
-            UserId = request.RequestedByUserId ?? 0,
-            GuildId = request.TargetGuildId ?? 0,
+            UserId = userId,
+            GuildId = guildId,
+            Username = Truncate(request.RequestedByUsername ?? string.Empty, 100),
+            RequestKind = request.Kind.ToString(),
+            CommandName = request.CommandName,
             RequestedAtUtc = requestedAtUtc,
-            EasternDateKey = MemeSchedule.GetEasternDateKey(requestedAtUtc),
+            EasternDateKey = dateKey,
             Result = result.Status.ToString(),
-            Reason = Truncate(result.Message, 500)
+            Reason = Truncate(result.Message, 500),
+            AttemptsToday = attemptsToday,
+            SuccessfulRequestsToday = successfulRequestsToday,
+            Source = result.Source,
+            SourcePostId = result.SourcePostId,
+            ImageUrl = result.ImageUrl,
+            SourcePermalink = result.SourcePermalink,
+            ImageSha256 = result.ImageSha256,
+            DiscordMessageId = result.DiscordMessageId,
+            ChannelId = result.ChannelId
         });
 
         await context.SaveChangesAsync(cancellationToken);
+
+        Console.WriteLine(
+            $"Meme command usage: Command={request.CommandName} Kind={request.Kind} UserId={userId} " +
+            $"Username={request.RequestedByUsername ?? string.Empty} GuildId={guildId} Result={result.Status} " +
+            $"AttemptsToday={attemptsToday} SuccessesToday={successfulRequestsToday} " +
+            $"Source={result.Source ?? string.Empty} SourcePostId={result.SourcePostId ?? string.Empty} " +
+            $"ImageUrl={result.ImageUrl ?? string.Empty} Permalink={result.SourcePermalink ?? string.Empty}");
     }
 
-    private async Task TryRecordFailedUserRequestAsync(
+    private async Task TryRecordFailedCommandUsageAsync(
         MemePostRequest request,
         MemePostResult result,
         DateTime requestedAtUtc,
@@ -394,12 +474,20 @@ public class MemePostingService
         try
         {
             await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
-            await RecordUserRequestAsync(context, request, result, requestedAtUtc, cancellationToken);
+            await RecordCommandUsageAsync(context, request, result, requestedAtUtc, cancellationToken);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"ERROR recording failed meme request: {ex.Message}");
+            Console.WriteLine($"ERROR recording failed meme command usage: {ex.Message}");
         }
+    }
+
+    private static string BuildConjureMessage(MemePostRequest request)
+    {
+        var requester = request.RequestedByUserId.HasValue
+            ? $"<@{request.RequestedByUserId.Value}>"
+            : request.RequestedByUsername ?? "Someone";
+        return $"{requester} has pried a meme from the void. Everyone pretend to be surprised.";
     }
 
     private async Task<MemeDownloadResult> DownloadImageAsync(

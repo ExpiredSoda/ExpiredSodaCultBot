@@ -82,8 +82,8 @@ Open `CultBot/Configuration/BotConfig.cs` and set your IDs:
 ## 4. Tumblr Image Meme Scheduler
 
 - Bot posts one static image meme in #memes at **9:00 AM**, **2:00 PM**, and **8:00 PM** America/New_York.
-- Source is Tumblr API v2 `/tagged` using rotating tags: `gamer memes`, `videogame memes`, `video game humor`, `gaming memes`, `black twitter`, `black memes`, and `black people memes`.
-- Posts are image-only Discord file uploads: no Tumblr link text, videos, photosets, GIFs, mature posts, or risky-topic posts.
+- Source is Tumblr API v2 `/tagged` using rotating tags: `gamer memes`, `videogame memes`, `video game humor`, `gaming memes`, `black twitter memes`, `black people twitter memes`, and `black memes funny`.
+- Posts are image-only Discord file uploads: no Tumblr link text, videos, photosets, GIFs, mature posts, risky-topic posts, or regular selfie/model/photo-shoot posts.
 - Duplicate prevention is stored in the `PostedMemes` table by source post ID, image hash, and scheduled slot.
 - Public: `/meme` lets initiated members request one meme on demand. Each user gets 3 successful requests per Eastern calendar day with a 10-minute cooldown between attempts.
 - Manual: `/meme-now` (admin only) bypasses user limits and fetches one meme immediately using the same filters.
@@ -160,7 +160,7 @@ Spam/profanity messages are deleted; slow mode and bans are applied per configur
 - **Role/channel not found:** Verify IDs in BotConfig.
 - **YouTube:** Ensure YOUTUBE_API_KEY is set; check quota in Google Cloud Console. Live checks run all day; increase `LiveCheckIntervalMinutes` if you need to reduce quota usage further.
 - **Memes disabled:** Set `MemesChannelId` and `TUMBLR_CONSUMER_KEY`. The bot needs View Channel, Send Messages, and Attach Files in #memes.
-- **No meme posted:** The Tumblr tags may not have an unused safe static image right now; the bot skips videos, GIFs, photosets, multiple-image posts, mature posts, risky terms, links, and duplicates.
+- **No meme posted:** The Tumblr tags may not have an unused safe static image right now; the bot skips videos, GIFs, photosets, multiple-image posts, mature posts, risky terms, links, regular portrait/model/photo-shoot posts, posts without meme/humor signals, and duplicates.
 - **Meme request blocked:** `/meme` requires one of the initiated path roles and enforces 3 successful requests per user per Eastern day plus a 10-minute cooldown.
 - **Recovery:** Users who missed initiation get the ritual on the next expiration-cycle run (every few minutes) if they have The Uninitiated role and no pending session (and, if set, joined within RecoveryMaxJoinAgeDays).
 

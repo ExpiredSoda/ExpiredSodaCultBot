@@ -19,4 +19,11 @@ public sealed record MemePostResult(
     bool Success,
     bool Skipped,
     string Message,
-    TimeSpan? RetryAfter = null);
+    TimeSpan? RetryAfter = null,
+    string? Source = null,
+    string? SourcePostId = null,
+    string? ImageUrl = null,
+    string? SourcePermalink = null,
+    string? ImageSha256 = null,
+    ulong? DiscordMessageId = null,
+    ulong? ChannelId = null);

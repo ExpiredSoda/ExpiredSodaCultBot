@@ -60,9 +60,9 @@ public static class BotConfig
         "videogame memes",
         "video game humor",
         "gaming memes",
-        "black twitter",
-        "black memes",
-        "black people memes"
+        "black twitter memes",
+        "black people twitter memes",
+        "black memes funny"
     };
     public const int MemeRetryGraceMinutes = 30;
     public const int TumblrFetchLimit = 20;
