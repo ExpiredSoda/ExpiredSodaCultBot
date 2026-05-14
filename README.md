@@ -24,6 +24,14 @@ A Discord bot with a cult-themed onboarding system for the Expired Soda Cult ser
 - **@everyone notifications** in #transmissions channel
 - **Beautiful embeds** with stream links
 
+### 🖼️ Tumblr Image Meme Scheduler
+- **Three daily image posts** at 9:00 AM, 2:00 PM, and 8:00 PM America/New_York
+- **Tumblr API source** using rotating gamer meme and Black Twitter-style tags
+- **Image-only Discord uploads** - no Tumblr links, videos, photosets, GIFs, or embeds
+- **Duplicate prevention** using Postgres history
+- **Public `/meme` command** for initiated members, limited to 3 successful uses per user per Eastern day with a 10-minute cooldown
+- **Manual `/meme-now` command** for admins to test or force a post
+
 ## Setup
 
 ### Prerequisites
@@ -72,6 +80,7 @@ Required:
 - `DISCORD_BOT_TOKEN` - Your Discord bot token
 - `DATABASE_URL` - PostgreSQL connection string (automatically set by Railway)
 - `YOUTUBE_API_KEY` - YouTube Data API v3 key (see [SETUP.md](SETUP.md))
+- `TUMBLR_CONSUMER_KEY` - Tumblr OAuth consumer key for image meme fetching
 
 ## Bot Permissions
 
@@ -101,6 +110,8 @@ ExpiredSodaCultBot/
 │   ├── Data/               # Database entities & context
 │   │   ├── CultBotDbContext.cs
 │   │   └── InitiationSession.cs
+│   ├── Features/           # Feature-specific modules
+│   │   └── Memes/          # Tumblr image meme scheduler
 │   ├── Services/           # Business logic
 │   │   ├── BotService.cs
 │   │   ├── InitiationService.cs

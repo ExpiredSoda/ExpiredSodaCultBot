@@ -1,3 +1,5 @@
+using CultBot.Configuration;
+using CultBot.Features.Memes;
 using Discord;
 using Discord.WebSocket;
 
@@ -9,13 +11,16 @@ public class SlashCommandHandler
 
     private readonly DiscordSocketClient _client;
     private readonly LiveStreamAnnouncementService _liveStreamService;
+    private readonly MemePostingService _memePostingService;
 
     public SlashCommandHandler(
         DiscordSocketClient client,
-        LiveStreamAnnouncementService liveStreamService)
+        LiveStreamAnnouncementService liveStreamService,
+        MemePostingService memePostingService)
     {
         _client = client;
         _liveStreamService = liveStreamService;
+        _memePostingService = memePostingService;
 
         _client.SlashCommandExecuted += HandleSlashCommandAsync;
     }
@@ -38,10 +43,20 @@ public class SlashCommandHandler
                 .WithDefaultMemberPermissions(GuildPermission.Administrator) // Only admins can use this
                 .Build();
 
-            // Register globally (available in all servers)
-            await _client.CreateGlobalApplicationCommandAsync(liveCommand);
-            
-            Console.WriteLine("✓ Registered /live slash command");
+            var memeNowCommand = new SlashCommandBuilder()
+                .WithName("meme-now")
+                .WithDescription("Post one image meme now")
+                .WithDefaultMemberPermissions(GuildPermission.Administrator)
+                .Build();
+
+            var memeCommand = new SlashCommandBuilder()
+                .WithName("meme")
+                .WithDescription("Request one image meme")
+                .Build();
+
+            await _client.BulkOverwriteGlobalApplicationCommandsAsync(new[] { liveCommand, memeCommand, memeNowCommand });
+
+            Console.WriteLine("✓ Registered /live, /meme, and /meme-now slash commands");
             return true;
         }
         catch (Exception ex)
@@ -68,6 +83,39 @@ public class SlashCommandHandler
 
                 Console.WriteLine($"✓ /live command executed by {command.User.Username}");
             }
+            else if (command.Data.Name == "meme-now")
+            {
+                await command.DeferAsync(ephemeral: true);
+
+                var guildUser = command.User as SocketGuildUser;
+                var result = await _memePostingService.PostManualMemeAsync(guildUser?.Guild.Id);
+
+                await command.FollowupAsync(result.Message, ephemeral: true);
+
+                Console.WriteLine($"✓ /meme-now command executed by {command.User.Username}");
+            }
+            else if (command.Data.Name == "meme")
+            {
+                await command.DeferAsync(ephemeral: true);
+
+                if (command.User is not SocketGuildUser guildUser)
+                {
+                    await command.FollowupAsync("Use this command inside the server.", ephemeral: true);
+                    return;
+                }
+
+                if (!HasInitiatedRole(guildUser))
+                {
+                    await command.FollowupAsync("Only initiated members can request memes.", ephemeral: true);
+                    return;
+                }
+
+                var result = await _memePostingService.PostUserRequestedMemeAsync(guildUser.Id, guildUser.Guild.Id);
+
+                await command.FollowupAsync(result.Message, ephemeral: true);
+
+                Console.WriteLine($"✓ /meme command executed by {command.User.Username}");
+            }
         }
         catch (Exception ex)
         {
@@ -81,5 +129,13 @@ public class SlashCommandHandler
                 // Command may have already been acknowledged
             }
         }
+    }
+
+    private static bool HasInitiatedRole(SocketGuildUser user)
+    {
+        return user.Roles.Any(role =>
+            role.Id == BotConfig.SilentWitnessRoleId ||
+            role.Id == BotConfig.NeonDiscipleRoleId ||
+            role.Id == BotConfig.VeiledArchivistRoleId);
     }
 }

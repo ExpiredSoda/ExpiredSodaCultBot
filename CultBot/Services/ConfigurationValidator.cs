@@ -61,6 +61,29 @@ public class ConfigurationValidator
                 hasErrors = true;
             }
 
+            if (BotConfig.MemesChannelId == 0)
+            {
+                Console.WriteLine("Memes Channel: disabled (MemesChannelId is 0)");
+            }
+            else
+            {
+                var memesChannel = guild.GetTextChannel(BotConfig.MemesChannelId);
+                if (memesChannel != null)
+                {
+                    Console.WriteLine($"✓ Memes Channel: #{memesChannel.Name} (ID: {BotConfig.MemesChannelId})");
+                }
+                else
+                {
+                    Console.WriteLine($"✗ ERROR: Memes Channel not found! (ID: {BotConfig.MemesChannelId})");
+                    hasErrors = true;
+                }
+
+                if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(BotConfig.TumblrConsumerKeyEnvironmentVariable)))
+                {
+                    Console.WriteLine("Memes Source: disabled (TUMBLR_CONSUMER_KEY is missing)");
+                }
+            }
+
             // Check The Uninitiated Role
             var uninitiatedRole = guild.GetRole(BotConfig.TheUninitiatedRoleId);
             if (uninitiatedRole != null)
@@ -119,12 +142,27 @@ public class ConfigurationValidator
                 Console.WriteLine($"  {(permissions.ManageRoles ? "✓" : "✗")} Manage Roles");
                 Console.WriteLine($"  {(permissions.KickMembers ? "✓" : "✗")} Kick Members");
                 Console.WriteLine($"  {(permissions.SendMessages ? "✓" : "✗")} Send Messages");
+                Console.WriteLine($"  {(permissions.AttachFiles ? "✓" : "✗")} Attach Files");
                 Console.WriteLine($"  {(permissions.ViewChannel ? "✓" : "✗")} View Channels");
 
                 if (!permissions.ManageRoles || !permissions.KickMembers)
                 {
                     Console.WriteLine("✗ WARNING: Bot is missing critical permissions!");
                     hasErrors = true;
+                }
+
+                if (BotConfig.MemesChannelId != 0)
+                {
+                    var memesChannel = guild.GetTextChannel(BotConfig.MemesChannelId);
+                    if (memesChannel != null)
+                    {
+                        var channelPermissions = botUser.GetPermissions(memesChannel);
+                        if (!channelPermissions.ViewChannel || !channelPermissions.SendMessages || !channelPermissions.AttachFiles)
+                        {
+                            Console.WriteLine("✗ WARNING: Bot is missing View Channel, Send Messages, or Attach Files in the memes channel.");
+                            hasErrors = true;
+                        }
+                    }
                 }
             }
         }

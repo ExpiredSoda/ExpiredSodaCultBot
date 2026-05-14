@@ -1,4 +1,5 @@
 using CultBot.Data;
+using CultBot.Features.Memes;
 using Discord;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
@@ -19,6 +20,7 @@ public class BotService : IHostedService
     private readonly DataCollectionService _dataCollectionService;
     private readonly GiveawayService _giveawayService;
     private readonly IBotReadySignal _readySignal;
+    private readonly MemeSchemaInitializer _memeSchemaInitializer;
 
     public BotService(
         DiscordSocketClient client,
@@ -31,7 +33,8 @@ public class BotService : IHostedService
         ProfanityFilterService profanityFilterService,
         DataCollectionService dataCollectionService,
         GiveawayService giveawayService,
-        IBotReadySignal readySignal)
+        IBotReadySignal readySignal,
+        MemeSchemaInitializer memeSchemaInitializer)
     {
         _client = client;
         _onboardingService = onboardingService;
@@ -44,6 +47,7 @@ public class BotService : IHostedService
         _dataCollectionService = dataCollectionService;
         _giveawayService = giveawayService;
         _readySignal = readySignal;
+        _memeSchemaInitializer = memeSchemaInitializer;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -54,6 +58,7 @@ public class BotService : IHostedService
             await using (var context = await _contextFactory.CreateDbContextAsync(cancellationToken))
             {
                 await context.Database.EnsureCreatedAsync(cancellationToken);
+                await _memeSchemaInitializer.EnsureCreatedAsync(cancellationToken);
                 Console.WriteLine("✓ Database initialized successfully.");
             }
         }

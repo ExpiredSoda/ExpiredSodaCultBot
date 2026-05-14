@@ -1,4 +1,5 @@
 using CultBot.Data;
+using CultBot.Features.Memes;
 using CultBot.Services;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
@@ -50,6 +51,10 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddCultBotServices(this IServiceCollection services)
     {
         services.AddSingleton<IBotReadySignal, BotReadySignal>();
+        services.AddSingleton(new HttpClient
+        {
+            Timeout = TimeSpan.FromSeconds(30)
+        });
 
         services.AddSingleton<InitiationService>();
         services.AddSingleton<ConfigurationValidator>();
@@ -65,10 +70,14 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<LiveStreamAnnouncementService>();
         services.AddSingleton<SlashCommandHandler>();
         services.AddSingleton<GiveawayService>();
+        services.AddSingleton<TumblrMemeProvider>();
+        services.AddSingleton<MemePostingService>();
+        services.AddSingleton<MemeSchemaInitializer>();
 
         services.AddHostedService<InitiationExpirationService>();
         services.AddHostedService<LiveStreamCheckerService>();
         services.AddHostedService<GiveawayBackgroundService>();
+        services.AddHostedService<MemeSchedulerService>();
 
         services.AddHostedService<BotService>();
 

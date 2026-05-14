@@ -46,6 +46,31 @@ public static class BotConfig
     /// <summary>Platform key for LiveStreamStatus (e.g. "YouTube").</summary>
     public const string LiveStreamPlatformYouTube = "YouTube";
 
+    // Meme Scheduler (#memes) - Tumblr image source
+    public static readonly ulong MemesChannelId = 1442980325889277992;
+    public static readonly TimeOnly[] MemePostTimesEastern = new[]
+    {
+        new TimeOnly(9, 0),
+        new TimeOnly(14, 0),
+        new TimeOnly(20, 0)
+    };
+    public static readonly string[] TumblrMemeTags = new[]
+    {
+        "gamer memes",
+        "videogame memes",
+        "video game humor",
+        "gaming memes",
+        "black twitter",
+        "black memes",
+        "black people memes"
+    };
+    public const int MemeRetryGraceMinutes = 30;
+    public const int TumblrFetchLimit = 20;
+    public const int MemeMaxImageBytes = 8 * 1024 * 1024;
+    public const int MemeDailyUserRequestLimit = 3;
+    public const int MemeUserRequestCooldownMinutes = 10;
+    public const string TumblrConsumerKeyEnvironmentVariable = "TUMBLR_CONSUMER_KEY";
+
     // Giveaway (🎁 | giveaways) - Set GiveawayChannelId after creating the channel
     public static readonly ulong GiveawayChannelId = 0; // Replace with your giveaway channel ID
     public const int MemberGoal = 100; // First goal: 100 initiated members

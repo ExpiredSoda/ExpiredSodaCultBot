@@ -1,3 +1,4 @@
+using CultBot.Features.Memes;
 using Microsoft.EntityFrameworkCore;
 
 namespace CultBot.Data;
@@ -18,6 +19,8 @@ public class CultBotDbContext : DbContext
     public DbSet<ModerationLog> ModerationLogs { get; set; } = null!;
     public DbSet<SpamTracker> SpamTrackers { get; set; } = null!;
     public DbSet<GiveawayState> GiveawayStates { get; set; } = null!;
+    public DbSet<PostedMeme> PostedMemes { get; set; } = null!;
+    public DbSet<MemeRequestUsage> MemeRequestUsages { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -83,6 +86,22 @@ public class CultBotDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.GuildId).IsUnique();
+        });
+
+        modelBuilder.Entity<PostedMeme>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.GuildId, e.Source, e.SourcePostId }).IsUnique();
+            entity.HasIndex(e => new { e.GuildId, e.ImageSha256 }).IsUnique();
+            entity.HasIndex(e => new { e.GuildId, e.ScheduledSlotUtc }).IsUnique();
+            entity.HasIndex(e => e.PostedAtUtc);
+        });
+
+        modelBuilder.Entity<MemeRequestUsage>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.UserId, e.EasternDateKey, e.Result });
+            entity.HasIndex(e => new { e.UserId, e.RequestedAtUtc });
         });
     }
 }
