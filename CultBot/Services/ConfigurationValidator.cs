@@ -24,6 +24,10 @@ public class ConfigurationValidator
         foreach (var guild in _client.Guilds)
         {
             Console.WriteLine($"\nValidating configuration for guild: {guild.Name} (ID: {guild.Id})");
+            var initiationSafe = IsInitiationConfigurationSafe(guild, out var initiationReason);
+            Console.WriteLine(initiationSafe ? "Initiation actions enabled: safety checks passed." :
+                $"Initiation actions disabled: {initiationReason}");
+            hasErrors |= !initiationSafe;
 
             // Check Gateway Channel
             var gatewayChannel = guild.GetTextChannel(BotConfig.GatewayChannelId);
@@ -181,5 +185,37 @@ public class ConfigurationValidator
         Console.WriteLine("========================================\n");
 
         await Task.CompletedTask;
+    }
+
+    public bool IsInitiationConfigurationSafe(SocketGuild guild, out string reason)
+    {
+        var ids = new[] { BotConfig.TheUninitiatedRoleId, BotConfig.SilentWitnessRoleId,
+            BotConfig.NeonDiscipleRoleId, BotConfig.VeiledArchivistRoleId };
+        var roles = ids.Select(guild.GetRole).ToArray();
+        var bot = _client.CurrentUser == null ? null : guild.GetUser(_client.CurrentUser.Id);
+        var botPosition = bot?.Roles.Max(role => role.Position) ?? -1;
+        var channel = guild.GetTextChannel(BotConfig.RoleRitualChannelId);
+        var channelPermissions = bot != null && channel != null ? bot.GetPermissions(channel) : default;
+        var rolesPresent = roles.All(role => role != null);
+        var rolesManageable = roles.All(role => role != null && !role.IsManaged &&
+            !role.Permissions.Administrator && role.Position < botPosition);
+        var manageRoles = bot?.GuildPermissions.ManageRoles == true;
+        var kickMembers = bot?.GuildPermissions.KickMembers == true;
+        var ritualAccessible = channel != null && channelPermissions.ViewChannel && channelPermissions.SendMessages &&
+            channelPermissions.ReadMessageHistory;
+        var distinct = ids.All(id => id != 0) && ids.Distinct().Count() == ids.Length;
+        var safe = InitiationPolicy.IsConfigurationSafe(rolesPresent, rolesManageable, manageRoles, kickMembers,
+            ritualAccessible, distinct, BotConfig.InitiationTimeoutHours, BotConfig.ReminderGracePeriodHours,
+            BotConfig.RecoveryMaxJoinAgeDays);
+        var failures = new List<string>();
+        if (!rolesPresent || !distinct) failures.Add("initiation role IDs are missing or duplicated");
+        if (!rolesManageable) failures.Add("initiation roles must be ordinary roles below the bot and must not grant Administrator");
+        if (!manageRoles || !kickMembers) failures.Add("bot requires Manage Roles and Kick Members");
+        if (!ritualAccessible) failures.Add("ritual channel requires View Channel, Send Messages and Read Message History");
+        var windowsPositive = BotConfig.InitiationTimeoutHours > 0 && BotConfig.ReminderGracePeriodHours > 0 && BotConfig.RecoveryMaxJoinAgeDays > 0;
+        if (!windowsPositive)
+            failures.Add("initiation timeouts and recovery age must be positive");
+        reason = string.Join("; ", failures);
+        return safe;
     }
 }

@@ -1,15 +1,55 @@
 using CultBot.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Buffers.Binary;
+using System.Collections.Concurrent;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace CultBot.Services;
 
 public class InitiationService
 {
+    private static readonly ConcurrentDictionary<(ulong GuildId, ulong UserId), SemaphoreSlim> MemberLocks = new();
     private readonly IDbContextFactory<CultBotDbContext> _contextFactory;
 
     public InitiationService(IDbContextFactory<CultBotDbContext> contextFactory)
     {
         _contextFactory = contextFactory;
+    }
+
+    public async Task<T> RunExclusiveAsync<T>(ulong guildId, ulong userId, Func<Task<T>> action, CancellationToken cancellationToken = default)
+    {
+        var memberLock = MemberLocks.GetOrAdd((guildId, userId), _ => new SemaphoreSlim(1, 1));
+        await memberLock.WaitAsync(cancellationToken);
+        try
+        {
+            await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+            if (context.Database.ProviderName == "Npgsql.EntityFrameworkCore.PostgreSQL")
+            {
+                // Transaction-scoped advisory locks also serialize rolling deployments/replicas without schema changes.
+                await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+                var hash = SHA256.HashData(Encoding.UTF8.GetBytes($"cultbot-initiation:{guildId}:{userId}"));
+                var key = BinaryPrimitives.ReadInt64LittleEndian(hash);
+                await context.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock({key})", cancellationToken);
+                return await action(); // Disposing the transaction releases the lock, including on failure.
+            }
+            return await action();
+        }
+        finally { memberLock.Release(); }
+    }
+
+    public async Task<InitiationSession?> GetSessionAsync(int sessionId)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.InitiationSessions.AsNoTracking().FirstOrDefaultAsync(s => s.Id == sessionId);
+    }
+
+    public async Task<InitiationSession?> GetLatestSessionAsync(ulong userId, ulong guildId)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.InitiationSessions.AsNoTracking()
+            .Where(s => s.UserId == userId && s.GuildId == guildId)
+            .OrderByDescending(s => s.JoinTimeUtc).ThenByDescending(s => s.Id).FirstOrDefaultAsync();
     }
 
     public async Task<InitiationSession> CreateSessionAsync(ulong userId, ulong guildId, ulong ritualChannelId, ulong ritualMessageId)
@@ -74,7 +114,7 @@ public class InitiationService
             .ToListAsync();
     }
 
-    public async Task MarkSessionCompletedAsync(int sessionId, string chosenRole)
+    public async Task<bool> MarkSessionCompletedAsync(int sessionId, string chosenRole)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
 
@@ -85,7 +125,9 @@ public class InitiationService
             session.ChosenRole = chosenRole;
             session.CompletedTimeUtc = DateTime.UtcNow;
             await context.SaveChangesAsync();
+            return true;
         }
+        return false;
     }
 
     public async Task MarkSessionExpiredAsync(int sessionId)

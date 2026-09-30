@@ -1,8 +1,10 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CultBot", "CultBot\CultBot.csproj", "{78CD1835-CC67-8EB7-1188-8CCE93139FC2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CultBot.Tests", "CultBot.Tests\CultBot.Tests.csproj", "{AECF0022-146E-4BBB-A601-444F4F01E151}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -14,6 +16,10 @@ Global
 		{78CD1835-CC67-8EB7-1188-8CCE93139FC2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{78CD1835-CC67-8EB7-1188-8CCE93139FC2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{78CD1835-CC67-8EB7-1188-8CCE93139FC2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AECF0022-146E-4BBB-A601-444F4F01E151}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AECF0022-146E-4BBB-A601-444F4F01E151}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AECF0022-146E-4BBB-A601-444F4F01E151}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AECF0022-146E-4BBB-A601-444F4F01E151}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

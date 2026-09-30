@@ -64,6 +64,8 @@ public static class ServiceCollectionExtensions
         });
 
         services.AddSingleton<InitiationService>();
+        services.AddSingleton(TimeProvider.System);
+        services.AddSingleton<InitiationWorkflow>();
         services.AddSingleton<ConfigurationValidator>();
 
         services.AddSingleton<ModerationService>();

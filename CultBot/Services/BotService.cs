@@ -116,9 +116,8 @@ public class BotService : IHostedService
         Console.WriteLine("Cult Bot is ready!");
 
         await _slashCommandHandler.RegisterCommandsOnceAsync();
-        _readySignal.SetReady();
-
         await _configValidator.ValidateConfigurationAsync();
+        _readySignal.SetReady();
     }
 
     private async Task OnUserJoinedAsync(SocketGuildUser user)

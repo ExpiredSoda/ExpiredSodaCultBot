@@ -51,12 +51,17 @@ Open `CultBot/Configuration/BotConfig.cs` and set your IDs:
 
 - New members get **The Uninitiated** role and a welcome message in #gateway.
 - They must complete the **Rite of Choosing** in #role-ritual (button selection) within **24 hours**.
-- If they don’t, they are kicked and the session is marked expired.
-- **Recovery:** If the bot was down when someone joined, a periodic check finds users with The Uninitiated role but no initiation session and sends them the ritual message (24h starts from then). Configure `RecoveryMaxJoinAgeDays` in BotConfig (0 = no limit; e.g. 7 = only users who joined in the last 7 days).
+- After 24 hours, the bot sends a reminder. A successfully delivered reminder starts a further **24-hour grace period** before a kick can be considered. Failed channel and DM delivery does not start that period.
+- A path choice is saved as completed before optional role cleanup, ritual deletion, or success announcements. Failed announcements do not undo initiation.
+- **Recovery:** A periodic check enrolls eligible newcomers who joined within `RecoveryMaxJoinAgeDays` (default **7**), including joins missed while the bot was offline. Bots, the server owner, administrators, existing path holders, and memberships with an existing session are excluded. Completed or expired memberships are not enrolled again; a fresh rejoin can receive a new session. Zero is invalid and disables initiation actions.
+- Before a kick, the bot reloads the session and fetches the member's current Discord roles. It requires a pending session, the holding role, an eligible matching membership, elapsed grace, and a manageable role hierarchy. Old recovery sessions belonging to established members are retired without kicking them.
+- Initiation actions require distinct existing roles below the bot's highest role, with no managed roles or Administrator permission; the bot needs **Manage Roles** and **Kick Members**, plus **View Channel**, **Send Messages**, and **Read Message History** in #role-ritual. Invalid configuration disables initiation actions and reports the reason in logs.
 
 **#role-ritual permissions:** Allow The Uninitiated (Read, View Channel, Read Message History). Deny @everyone. Other channels: deny The Uninitiated; allow the three path roles.
 
-**Timeouts:** `InitiationTimeoutHours` (default 24), `ExpirationCheckIntervalMinutes` (default 5).
+**Timeouts:** `InitiationTimeoutHours` (default 24), `ReminderGracePeriodHours` (default 24), `ExpirationCheckIntervalMinutes` (default 5). Timeout, grace, and recovery windows must be positive.
+
+**Regression checks:** Run `dotnet test ExpiredSodaCultBot.sln --configuration Release`. The tests use an isolated in-memory database and simulated Discord actions; they do not log in or act on real members. PostgreSQL advisory locks serialize member workflows across bot instances without a schema migration; local tests exercise serialization within the process.
 
 ---
 
